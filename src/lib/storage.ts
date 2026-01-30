@@ -22,7 +22,8 @@ export const saveEmployeeData = async (
     month: string,
     weekStartDate: string,
     weekEndDate: string,
-    stats: WeeklyStats
+    stats: WeeklyStats,
+    mode: 'week' | 'day' = 'week'
 ): Promise<void> => {
     try {
         const employeeId = id || crypto.randomUUID();
@@ -42,7 +43,8 @@ export const saveEmployeeData = async (
                     name,
                     team: team as any,
                     avatar,
-                    weeks: {}
+                    weeks: {},
+                    days: {}
                 };
             }
         } else {
@@ -52,7 +54,8 @@ export const saveEmployeeData = async (
                 name,
                 team: team as any,
                 avatar,
-                weeks: {}
+                weeks: {},
+                days: {}
             };
         }
 
@@ -62,15 +65,28 @@ export const saveEmployeeData = async (
         if (avatar) employee.avatar = avatar;
 
         if (!employee.weeks) employee.weeks = {};
-        if (!employee.weeks[month]) employee.weeks[month] = {};
+        if (!employee.days) employee.days = {};
+        if (month && !employee.weeks[month]) employee.weeks[month] = {};
 
-        // Save stats using start date as key
-        if (weekStartDate) {
-            employee.weeks[month][weekStartDate] = {
-                ...stats,
-                startDate: weekStartDate,
-                endDate: weekEndDate
-            };
+        // Save stats
+        if (mode === 'day') {
+            // Daily mode: key is the specific date (passed as weekStartDate for simplicity of args reuse, or we treat start date as the day)
+            if (weekStartDate) {
+                employee.days[weekStartDate] = {
+                    ...stats,
+                    startDate: weekStartDate,
+                    endDate: weekStartDate // Same day
+                };
+            }
+        } else {
+            // Weekly mode
+            if (month && weekStartDate) {
+                employee.weeks[month][weekStartDate] = {
+                    ...stats,
+                    startDate: weekStartDate,
+                    endDate: weekEndDate
+                };
+            }
         }
 
         await setDoc(employeeRef, employee);

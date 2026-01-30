@@ -16,6 +16,8 @@ export interface Employee {
     avatar: string;
     // Format: "YYYY-MM" -> { "YYYY-MM-DD": Stats }
     weeks: Record<string, Record<string, WeeklyStats>>;
+    // Format: "YYYY-MM-DD" -> Stats
+    days?: Record<string, WeeklyStats>;
 }
 
 export interface MonthlyAggregatedStats {

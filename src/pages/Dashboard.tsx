@@ -12,6 +12,10 @@ export const Dashboard = () => {
         new Date().toISOString().slice(0, 7)
     );
     const [selectedWeek, setSelectedWeek] = useState<string>('all');
+    const [viewMode, setViewMode] = useState<'week' | 'day'>('week');
+    const [selectedDate, setSelectedDate] = useState<string>(
+        new Date().toISOString().slice(0, 10)
+    );
 
     useEffect(() => {
         const load = async () => {
@@ -29,11 +33,7 @@ export const Dashboard = () => {
         const weeksSet = new Set<string>();
         employees.forEach(emp => {
             const monthWeeks = emp.weeks?.[selectedMonth] || {};
-            // monthWeeks is Record<string, WeeklyStats>
             Object.values(monthWeeks).forEach(stats => {
-                // Should use stats.startDate as the key identifier
-                // Ensure stats has startDate
-                // In migration phase, older data might crash if we don't check
                 if (stats.startDate) {
                     weeksSet.add(stats.startDate);
                 }
@@ -43,11 +43,8 @@ export const Dashboard = () => {
     }, [employees, selectedMonth]);
 
     const formatWeekLabel = (startDateStr: string) => {
-        // Try to find ANY stats with this start date to get the end date
         for (const emp of employees) {
             const monthWeeks = emp.weeks?.[selectedMonth] || {};
-            // We need to iterate values because keys might match startDateStr or not depending on old stats
-            // But we refactored saved keys to be startDateStr
             const stats = monthWeeks[startDateStr];
             if (stats && stats.endDate) {
                 const start = new Date(stats.startDate);
@@ -55,29 +52,39 @@ export const Dashboard = () => {
                 return `${start.getDate()}.${String(start.getMonth() + 1).padStart(2, '0')} - ${end.getDate()}.${String(end.getMonth() + 1).padStart(2, '0')}`;
             }
         }
-        return startDateStr; // Fallback
+        return startDateStr;
     }
 
-    // Handle data aggregation based on Week Selection
+    // Handle data aggregation based on Week Selection OR Daily Selection
     const dashboardData = useMemo(() => {
         return employees.map(emp => {
-            const monthWeeks = emp.weeks?.[selectedMonth] || {};
+            let stats: any = null;
 
-            let stats: any;
-            if (selectedWeek === 'all') {
-                stats = calculateMonthlyStats(monthWeeks);
-            } else {
-                // Get specific week stats by StartDate key (which IS selectedWeek)
-                const wStats = monthWeeks[selectedWeek];
-                if (wStats) {
-                    stats = {
-                        kpi: wStats.kpi,
-                        chats: wStats.chats,
-                        responseTime: wStats.responseTime,
-                        activityCount: wStats.activities.length
-                    };
+            if (viewMode === 'week') {
+                const monthWeeks = emp.weeks?.[selectedMonth] || {};
+                if (selectedWeek === 'all') {
+                    stats = calculateMonthlyStats(monthWeeks);
                 } else {
-                    stats = null;
+                    const wStats = monthWeeks[selectedWeek];
+                    if (wStats) {
+                        stats = {
+                            kpi: wStats.kpi,
+                            chats: wStats.chats,
+                            responseTime: wStats.responseTime,
+                            activityCount: wStats.activities.length
+                        };
+                    }
+                }
+            } else {
+                // DAILY MODE
+                const dayStats = emp.days?.[selectedDate];
+                if (dayStats) {
+                    stats = {
+                        kpi: dayStats.kpi,
+                        chats: dayStats.chats,
+                        responseTime: dayStats.responseTime,
+                        activityCount: dayStats.activities.length
+                    };
                 }
             }
 
@@ -86,7 +93,7 @@ export const Dashboard = () => {
                 stats
             };
         }).filter(e => e.stats !== null);
-    }, [employees, selectedMonth, selectedWeek]);
+    }, [employees, selectedMonth, selectedWeek, viewMode, selectedDate]);
 
     // Generators for leaderboard lists
     const getLeaderboard = (
@@ -152,42 +159,65 @@ export const Dashboard = () => {
             <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
                 <div>
                     <h2 className="text-3xl font-bold text-[#FDB813] mb-2">Обзор команд</h2>
-                    <p className="text-zinc-400">
-                        {selectedWeek === 'all'
-                            ? `Итоги месяца: ${selectedMonth}`
-                            : `Период: ${formatWeekLabel(selectedWeek)}`}
-                    </p>
+                    <div className="flex gap-2 mb-2">
+                        <button
+                            onClick={() => setViewMode('week')}
+                            className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${viewMode === 'week' ? 'bg-[#FDB813] text-black border-[#FDB813]' : 'bg-transparent text-zinc-500 border-zinc-700'}`}
+                        >
+                            Неделя / Месяц
+                        </button>
+                        <button
+                            onClick={() => setViewMode('day')}
+                            className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${viewMode === 'day' ? 'bg-[#FDB813] text-black border-[#FDB813]' : 'bg-transparent text-zinc-500 border-zinc-700'}`}
+                        >
+                            Ежедневный
+                        </button>
+                    </div>
                 </div>
 
                 <div className="flex gap-4">
-                    <select
-                        value={selectedMonth}
-                        onChange={(e) => {
-                            setSelectedMonth(e.target.value);
-                            setSelectedWeek('all'); // Reset week when month changes
-                        }}
-                        className="bg-[#121212]/80 backdrop-blur-sm border border-[#FDB813]/20 text-white rounded-xl px-4 py-2 outline-none focus:border-[#FDB813]/50"
-                    >
-                        {availableMonths.map(m => (
-                            <option key={m} value={m}>{m}</option>
-                        ))}
-                        {!availableMonths.includes(selectedMonth) && (
-                            <option value={selectedMonth}>{selectedMonth}</option>
-                        )}
-                    </select>
+                    {viewMode === 'week' ? (
+                        <>
+                            <select
+                                value={selectedMonth}
+                                onChange={(e) => {
+                                    setSelectedMonth(e.target.value);
+                                    setSelectedWeek('all'); // Reset week when month changes
+                                }}
+                                className="bg-[#121212]/80 backdrop-blur-sm border border-[#FDB813]/20 text-white rounded-xl px-4 py-2 outline-none focus:border-[#FDB813]/50"
+                            >
+                                {availableMonths.map(m => (
+                                    <option key={m} value={m}>{m}</option>
+                                ))}
+                                {!availableMonths.includes(selectedMonth) && (
+                                    <option value={selectedMonth}>{selectedMonth}</option>
+                                )}
+                            </select>
 
-                    <select
-                        value={selectedWeek}
-                        onChange={(e) => setSelectedWeek(e.target.value)}
-                        className="bg-[#121212]/80 backdrop-blur-sm border border-[#FDB813]/20 text-white rounded-xl px-4 py-2 outline-none focus:border-[#FDB813]/50"
-                    >
-                        <option value="all">Весь месяц (Итог)</option>
-                        {availableWeeks.map(startDate => (
-                            <option key={startDate} value={startDate}>
-                                {formatWeekLabel(startDate)}
-                            </option>
-                        ))}
-                    </select>
+                            <select
+                                value={selectedWeek}
+                                onChange={(e) => setSelectedWeek(e.target.value)}
+                                className="bg-[#121212]/80 backdrop-blur-sm border border-[#FDB813]/20 text-white rounded-xl px-4 py-2 outline-none focus:border-[#FDB813]/50"
+                            >
+                                <option value="all">Весь месяц (Итог)</option>
+                                {availableWeeks.map(startDate => (
+                                    <option key={startDate} value={startDate}>
+                                        {formatWeekLabel(startDate)}
+                                    </option>
+                                ))}
+                            </select>
+                        </>
+                    ) : (
+                        <div className="flex items-center gap-2">
+                            <span className="text-zinc-400 text-sm">Дата:</span>
+                            <input
+                                type="date"
+                                value={selectedDate}
+                                onChange={(e) => setSelectedDate(e.target.value)}
+                                className="bg-[#121212]/80 backdrop-blur-sm border border-[#FDB813]/20 text-white rounded-xl px-4 py-2 outline-none focus:border-[#FDB813]/50"
+                            />
+                        </div>
+                    )}
                 </div>
             </div>
 

@@ -18,7 +18,9 @@ export const AddEmployee = () => {
         kpi: '',
         chats: '',
         responseTime: '',
-        activities: ''
+        activities: '',
+        mode: 'week' as 'week' | 'day',
+        dayDate: new Date().toISOString().slice(0, 10)
     });
 
     // Image Cropper State
@@ -103,8 +105,13 @@ export const AddEmployee = () => {
             return;
         }
 
-        if (!formData.weekStartDate || !formData.weekEndDate) {
+        if (formData.mode === 'week' && (!formData.weekStartDate || !formData.weekEndDate)) {
             toast.error('Выберите даты начала и конца недели');
+            return;
+        }
+
+        if (formData.mode === 'day' && !formData.dayDate) {
+            toast.error('Выберите дату');
             return;
         }
 
@@ -115,16 +122,17 @@ export const AddEmployee = () => {
                 formData.team as any,
                 formData.avatar,
                 formData.month,
-                formData.weekStartDate,
-                formData.weekEndDate,
+                formData.mode === 'day' ? formData.dayDate : formData.weekStartDate,
+                formData.mode === 'day' ? formData.dayDate : formData.weekEndDate,
                 {
                     kpi: parseFloat(formData.kpi) || 0,
                     chats: parseInt(formData.chats) || 0,
                     responseTime: parseFloat(formData.responseTime) || 0,
                     activities: formData.activities.split('\n').filter(s => s.trim()),
-                    startDate: formData.weekStartDate,
-                    endDate: formData.weekEndDate
-                }
+                    startDate: formData.mode === 'day' ? formData.dayDate : formData.weekStartDate,
+                    endDate: formData.mode === 'day' ? formData.dayDate : formData.weekEndDate
+                },
+                formData.mode
             );
 
             toast.success('Данные успешно сохранены!');
@@ -183,34 +191,67 @@ export const AddEmployee = () => {
                     </div>
 
                     {/* Time Period Section */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-4 bg-taxi-surface/50 rounded-xl border border-taxi-border">
-                        <div>
-                            <label className="block text-sm font-medium text-zinc-400 mb-2">Отчетный Месяц</label>
-                            <Input
-                                type="month"
-                                name="month"
-                                value={formData.month}
-                                onChange={handleInputChange}
-                            />
+                    <div className="p-4 bg-taxi-surface/50 rounded-xl border border-taxi-border space-y-4">
+                        <div className="flex gap-4 mb-4">
+                            <button
+                                type="button"
+                                onClick={() => setFormData(p => ({ ...p, mode: 'week' }))}
+                                className={`flex-1 py-2 rounded-lg font-bold transition-all ${formData.mode === 'week' ? 'bg-taxi-yellow text-black shadow-lg shadow-taxi-yellow/20' : 'bg-black/40 text-zinc-500 hover:text-zinc-300'}`}
+                            >
+                                Недельный отчет
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setFormData(p => ({ ...p, mode: 'day' }))}
+                                className={`flex-1 py-2 rounded-lg font-bold transition-all ${formData.mode === 'day' ? 'bg-taxi-yellow text-black shadow-lg shadow-taxi-yellow/20' : 'bg-black/40 text-zinc-500 hover:text-zinc-300'}`}
+                            >
+                                Ежедневный отчет
+                            </button>
                         </div>
-                        <div>
-                            <label className="block text-sm font-medium text-zinc-400 mb-2">Начало периода</label>
-                            <Input
-                                type="date"
-                                name="weekStartDate"
-                                value={formData.weekStartDate}
-                                onChange={handleInputChange}
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-zinc-400 mb-2">Конец периода</label>
-                            <Input
-                                type="date"
-                                name="weekEndDate"
-                                value={formData.weekEndDate}
-                                onChange={handleInputChange}
-                            />
-                        </div>
+
+                        {formData.mode === 'week' ? (
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-zinc-400 mb-2">Отчетный Месяц</label>
+                                    <Input
+                                        type="month"
+                                        name="month"
+                                        value={formData.month}
+                                        onChange={handleInputChange}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-zinc-400 mb-2">Начало недели</label>
+                                    <Input
+                                        type="date"
+                                        name="weekStartDate"
+                                        value={formData.weekStartDate}
+                                        onChange={handleInputChange}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-zinc-400 mb-2">Конец недели</label>
+                                    <Input
+                                        type="date"
+                                        name="weekEndDate"
+                                        value={formData.weekEndDate}
+                                        onChange={handleInputChange}
+                                    />
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-zinc-400 mb-2">Дата отчета</label>
+                                    <Input
+                                        type="date"
+                                        name="dayDate"
+                                        value={formData.dayDate}
+                                        onChange={handleInputChange}
+                                    />
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Metrics Section */}
