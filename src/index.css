@@ -1,0 +1,143 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --taxi-yellow: #FDB813;
+    --taxi-yellow-light: #FFCE3D;
+    --taxi-black: #0A0A0A;
+    --taxi-dark: #121212;
+    --taxi-surface: #1A1A1A;
+  }
+
+  body {
+    @apply antialiased;
+    background: #0A0A0A;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(253, 184, 19, 0.3);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(253, 184, 19, 0.5);
+}
+
+/* ============================================
+   LIQUID GLASS - iOS 26 Style
+   ============================================ */
+
+.liquid-glass {
+  background: linear-gradient(135deg,
+      rgba(253, 184, 19, 0.08) 0%,
+      rgba(20, 20, 20, 0.6) 50%,
+      rgba(253, 184, 19, 0.05) 100%);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(253, 184, 19, 0.15);
+  border-radius: 20px;
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.05),
+    0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.liquid-glass-subtle {
+  background: linear-gradient(135deg,
+      rgba(253, 184, 19, 0.04) 0%,
+      rgba(15, 15, 15, 0.7) 100%);
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  border: 1px solid rgba(253, 184, 19, 0.1);
+  border-radius: 16px;
+}
+
+.liquid-glass-header {
+  background: linear-gradient(180deg,
+      rgba(253, 184, 19, 0.1) 0%,
+      rgba(10, 10, 10, 0.85) 100%);
+  backdrop-filter: blur(24px) saturate(200%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  border-bottom: 1px solid rgba(253, 184, 19, 0.2);
+}
+
+.liquid-glass-nav {
+  background: linear-gradient(0deg,
+      rgba(253, 184, 19, 0.1) 0%,
+      rgba(10, 10, 10, 0.9) 100%);
+  backdrop-filter: blur(24px) saturate(200%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  border-top: 1px solid rgba(253, 184, 19, 0.15);
+}
+
+/* Legacy support - redirect to liquid glass */
+.glass-panel {
+  background: linear-gradient(135deg,
+      rgba(253, 184, 19, 0.06) 0%,
+      rgba(18, 18, 18, 0.8) 100%);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(253, 184, 19, 0.12);
+  border-radius: 20px;
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.03),
+    0 4px 24px rgba(0, 0, 0, 0.3);
+}
+
+/* Gradient text - yellow */
+.gradient-text {
+  @apply bg-clip-text text-transparent;
+  background-image: linear-gradient(135deg, #FDB813 0%, #FFCE3D 100%);
+}
+
+/* ============================================
+   TAXI THEMED UTILITIES - Minimal
+   ============================================ */
+
+.taxi-text {
+  color: #FDB813;
+}
+
+.taxi-text-muted {
+  color: rgba(253, 184, 19, 0.7);
+}
+
+.taxi-border {
+  border-color: rgba(253, 184, 19, 0.2);
+}
+
+.taxi-border-accent {
+  border-color: rgba(253, 184, 19, 0.4);
+}
+
+/* Subtle highlight for active states */
+.taxi-highlight {
+  background: rgba(253, 184, 19, 0.1);
+  border: 1px solid rgba(253, 184, 19, 0.2);
+}
+
+/* Input focus styling */
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: rgba(253, 184, 19, 0.4) !important;
+  box-shadow: 0 0 0 3px rgba(253, 184, 19, 0.1);
+}
+
+/* Button hover subtle */
+.btn-taxi:hover {
+  background: linear-gradient(135deg, #FFCE3D 0%, #FDB813 100%);
+  transform: translateY(-1px);
+}

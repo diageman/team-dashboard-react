@@ -1,0 +1,353 @@
+import { useState, useEffect, useRef } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { saveEmployeeData, getEmployees, isAuthenticated } from '../lib/storage';
+import { Button, Input, Select } from '../components/Ui';
+import toast from 'react-hot-toast';
+import Cropper from 'react-easy-crop';
+import { getCroppedImg } from '../lib/imageUtils';
+import { Camera, X, Check } from 'lucide-react';
+
+export const AddEmployee = () => {
+    const [formData, setFormData] = useState({
+        name: '',
+        team: '',
+        avatar: '',
+        month: new Date().toISOString().slice(0, 7),
+        weekStartDate: '',
+        weekEndDate: '',
+        kpi: '',
+        chats: '',
+        responseTime: '',
+        activities: ''
+    });
+
+    // Image Cropper State
+    const [imageSrc, setImageSrc] = useState<string | null>(null);
+    const [crop, setCrop] = useState({ x: 0, y: 0 });
+    const [zoom, setZoom] = useState(1);
+    const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
+    const [isCropping, setIsCropping] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
+    const editId = searchParams.get('editId');
+
+    useEffect(() => {
+        if (!isAuthenticated()) {
+            toast.error('Доступ только для администраторов');
+            navigate('/manage');
+            return;
+        }
+
+        if (editId) {
+            const employees = getEmployees();
+            const emp = employees.find(e => e.id === editId);
+            if (emp) {
+                setFormData(prev => ({
+                    ...prev,
+                    name: emp.name,
+                    team: emp.team,
+                    avatar: emp.avatar
+                }));
+                toast('Режим редактирования: ФИО и Команда заполнены.', { icon: '✏️' });
+            }
+        }
+    }, [editId, navigate]);
+
+    const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files.length > 0) {
+            const file = e.target.files[0];
+            const imageDataUrl = await readFile(file);
+            setImageSrc(imageDataUrl as string);
+            setIsCropping(true);
+        }
+    };
+
+    const readFile = (file: File) => {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.addEventListener('load', () => resolve(reader.result), false);
+            reader.readAsDataURL(file);
+        });
+    };
+
+    const handleCropComplete = (_: any, croppedAreaPixels: any) => {
+        setCroppedAreaPixels(croppedAreaPixels);
+    };
+
+    const saveCroppedImage = async () => {
+        try {
+            if (imageSrc && croppedAreaPixels) {
+                const croppedImage = await getCroppedImg(imageSrc, croppedAreaPixels);
+                setFormData(prev => ({ ...prev, avatar: croppedImage }));
+                setIsCropping(false);
+                setImageSrc(null);
+                toast.success('Фото обновлено!');
+            }
+        } catch (e) {
+            console.error(e);
+            toast.error('Ошибка при обработке фото');
+        }
+    };
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!formData.name || !formData.team) {
+            toast.error('ФИО и Команда обязательны');
+            return;
+        }
+
+        if (!formData.weekStartDate || !formData.weekEndDate) {
+            toast.error('Выберите даты начала и конца недели');
+            return;
+        }
+
+        try {
+            saveEmployeeData(
+                formData.name,
+                formData.team as any,
+                formData.avatar,
+                formData.month,
+                formData.weekStartDate,
+                {
+                    kpi: parseFloat(formData.kpi) || 0,
+                    chats: parseInt(formData.chats) || 0,
+                    responseTime: parseFloat(formData.responseTime) || 0,
+                    activities: formData.activities.split('\n').filter(s => s.trim()),
+                    startDate: formData.weekStartDate,
+                    endDate: formData.weekEndDate
+                }
+            );
+
+            toast.success('Данные успешно сохранены!');
+
+            if (editId) {
+                navigate('/manage');
+            } else {
+                setFormData(prev => ({
+                    ...prev,
+                    kpi: '',
+                    chats: '',
+                    responseTime: '',
+                    activities: ''
+                }));
+            }
+        } catch (err) {
+            toast.error('Ошибка сохранения. Возможно, фото слишком большое для LocalStorage.');
+            console.error(err);
+        }
+    };
+
+    const handleInputChange = (e: any) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    return (
+        <div className="max-w-2xl mx-auto">
+            <div className="glass-panel p-8 rounded-2xl relative">
+                <h2 className="text-2xl font-bold mb-6 gradient-text">
+                    {editId ? 'Редактирование сотрудника' : 'Ввод статистики'}
+                </h2>
+
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    {/* Identity Section */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label className="block text-sm font-medium text-zinc-400 mb-2">ФИО Сотрудника</label>
+                            <Input
+                                name="name"
+                                value={formData.name}
+                                onChange={handleInputChange}
+                                placeholder="Иванов Иван"
+                                readOnly={!!editId}
+                                className={editId ? 'opacity-80' : ''}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-zinc-400 mb-2">Команда</label>
+                            <Select name="team" value={formData.team} onChange={handleInputChange}>
+                                <option value="">Выберите...</option>
+                                <option value="Команда 1">Команда 1</option>
+                                <option value="Команда 2">Команда 2</option>
+                            </Select>
+                        </div>
+                    </div>
+
+                    {/* Time Period Section */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-4 bg-taxi-surface/50 rounded-xl border border-taxi-border">
+                        <div>
+                            <label className="block text-sm font-medium text-zinc-400 mb-2">Отчетный Месяц</label>
+                            <Input
+                                type="month"
+                                name="month"
+                                value={formData.month}
+                                onChange={handleInputChange}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-zinc-400 mb-2">Начало периода</label>
+                            <Input
+                                type="date"
+                                name="weekStartDate"
+                                value={formData.weekStartDate}
+                                onChange={handleInputChange}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-zinc-400 mb-2">Конец периода</label>
+                            <Input
+                                type="date"
+                                name="weekEndDate"
+                                value={formData.weekEndDate}
+                                onChange={handleInputChange}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Metrics Section */}
+                    <div className="space-y-4">
+                        <h3 className="font-semibold text-zinc-300 mb-4">Показатели за период</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div>
+                                <label className="block text-xs uppercase font-bold text-zinc-500 mb-1">KPI (%)</label>
+                                <Input
+                                    type="number"
+                                    step="0.1"
+                                    min="0"
+                                    name="kpi"
+                                    value={formData.kpi}
+                                    onChange={handleInputChange}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs uppercase font-bold text-zinc-500 mb-1">Кол-во чатов</label>
+                                <Input
+                                    type="number"
+                                    name="chats"
+                                    value={formData.chats}
+                                    onChange={handleInputChange}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs uppercase font-bold text-zinc-500 mb-1">Время ответа (мин)</label>
+                                <Input
+                                    type="number"
+                                    step="0.1"
+                                    name="responseTime"
+                                    value={formData.responseTime}
+                                    onChange={handleInputChange}
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs uppercase font-bold text-zinc-500 mb-1">Активность (по строке на идею)</label>
+                            <textarea
+                                className="w-full bg-taxi-surface/50 border border-taxi-border rounded-lg px-4 py-3 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-taxi-yellow/50 transition-all min-h-[100px]"
+                                placeholder="• Предложил идею..."
+                                name="activities"
+                                value={formData.activities}
+                                onChange={handleInputChange}
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-zinc-400 mb-2">Аватар</label>
+                            <div className="flex gap-4 items-center">
+                                <div className="relative group cursor-pointer w-20 h-20 rounded-full overflow-hidden border-2 border-taxi-border bg-taxi-surface"
+                                    onClick={() => fileInputRef.current?.click()}>
+                                    <img
+                                        src={formData.avatar || "about:blank"}
+                                        className="w-full h-full object-cover"
+                                        onError={(e) => {
+                                            (e.target as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25' viewBox='0 0 48 48'%3E%3Crect fill='%23334155' width='48' height='48'/%3E%3C/svg%3E";
+                                        }}
+                                    />
+                                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <Camera className="w-6 h-6 text-white" />
+                                    </div>
+                                </div>
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    ref={fileInputRef}
+                                    onChange={onFileChange}
+                                    className="hidden"
+                                />
+                                <div className="flex-1">
+                                    <Input
+                                        name="avatar"
+                                        value={formData.avatar}
+                                        onChange={handleInputChange}
+                                        placeholder="Ссылка на фото (или загрузите файл)"
+                                        className="text-sm"
+                                    />
+                                    <p className="text-xs text-zinc-500 mt-1">
+                                        Нажмите на круг, чтобы загрузить с устройства.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <Button type="submit" className="w-full py-4 text-lg">
+                        {editId ? 'Обновить данные' : 'Сохранить данные'}
+                    </Button>
+                </form>
+
+                {/* Crop Modal */}
+                {isCropping && imageSrc && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+                        <div className="bg-taxi-dark w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl border border-taxi-border">
+                            <div className="p-4 border-b border-taxi-border flex justify-between items-center">
+                                <h3 className="text-white font-bold">Редактирование фото</h3>
+                                <button onClick={() => setIsCropping(false)} className="text-zinc-400 hover:text-white">
+                                    <X className="w-6 h-6" />
+                                </button>
+                            </div>
+                            <div className="relative h-64 w-full bg-black">
+                                <Cropper
+                                    image={imageSrc}
+                                    crop={crop}
+                                    zoom={zoom}
+                                    aspect={1}
+                                    onCropChange={setCrop}
+                                    onCropComplete={handleCropComplete}
+                                    onZoomChange={setZoom}
+                                    cropShape="round"
+                                />
+                            </div>
+                            <div className="p-6 space-y-4">
+                                <div>
+                                    <label className="text-xs text-zinc-400 mb-1 block">Масштаб</label>
+                                    <input
+                                        type="range"
+                                        value={zoom}
+                                        min={1}
+                                        max={3}
+                                        step={0.1}
+                                        aria-labelledby="Zoom"
+                                        onChange={(e) => setZoom(Number(e.target.value))}
+                                        className="w-full h-1 bg-taxi-border rounded-lg appearance-none cursor-pointer"
+                                    />
+                                </div>
+                                <div className="flex gap-4">
+                                    <Button variant="secondary" onClick={() => setIsCropping(false)} className="flex-1">
+                                        Отмена
+                                    </Button>
+                                    <Button onClick={saveCroppedImage} className="flex-1">
+                                        <Check className="w-4 h-4 mr-2" />
+                                        Сохранить
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
