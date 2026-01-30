@@ -230,14 +230,9 @@ export const Podium = ({ title, subtitle, items, type = 'default' }: PodiumProps
                 {others.length > 0 && (
                     <div className="overflow-y-auto custom-scrollbar bg-surface/80 p-4 space-y-2">
                         {others.map((item) => (
-                            <motion.div
+                            <div
                                 key={item.id}
-                                initial={{ opacity: 0, x: -20 }}
-                                whileInView={{ opacity: 1, x: 0 }}
-                                viewport={{ once: true }}
-                                whileHover={{ scale: 1.02, x: 5, backgroundColor: "rgba(253, 184, 19, 0.1)" }}
-                                transition={{ type: "spring", stiffness: 300 }}
-                                className="flex items-center gap-4 p-4 rounded-xl border border-secondary/50 transition-colors bg-background/40 cursor-default"
+                                className="flex items-center gap-4 p-4 rounded-xl border border-secondary/50 bg-background/40 cursor-default hover:bg-[#FDB813]/10 hover:border-[#FDB813]/30 transition-colors duration-200"
                             >
                                 <div className="font-mono text-zinc-500 font-bold w-8 text-center text-lg">#{item.rank}</div>
                                 <img
@@ -255,7 +250,7 @@ export const Podium = ({ title, subtitle, items, type = 'default' }: PodiumProps
                                     <div className="font-bold text-zinc-200 text-xl">{item.value}</div>
                                     {item.subValue && <div className="text-xs text-zinc-500">{item.subValue}</div>}
                                 </div>
-                            </motion.div>
+                            </div>
                         ))}
                     </div>
                 )}

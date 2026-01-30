@@ -19,10 +19,10 @@ export const Layout = ({ children }: LayoutProps) => {
 
     return (
         <div className="min-h-screen bg-[#0A0A0A] text-zinc-100 pb-20 md:pb-0">
-            {/* Ambient background glow */}
-            <div className="fixed inset-0 pointer-events-none overflow-hidden">
-                <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#FDB813]/5 rounded-full blur-[100px] animate-pulse" />
-                <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-[#FDB813]/3 rounded-full blur-[80px] animate-pulse" style={{ animationDelay: '1s' }} />
+            {/* Ambient background glow - static for performance */}
+            <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{ contain: 'strict' }}>
+                <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#FDB813]/5 rounded-full blur-[100px]" />
+                <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-[#FDB813]/3 rounded-full blur-[80px]" />
             </div>
 
             <header className="fixed top-0 left-0 right-0 z-50 liquid-glass-header">
@@ -107,7 +107,7 @@ export const Layout = ({ children }: LayoutProps) => {
             </main>
 
             {/* Mobile Bottom Nav */}
-            <nav className="md:hidden fixed bottom-0 left-0 right-0 liquid-glass-nav safe-area-bottom z-50">
+            <nav className="md:hidden fixed bottom-0 left-0 right-0 liquid-glass-nav safe-area-bottom z-50" style={{ willChange: 'auto', contain: 'layout style paint' }}>
                 <div className="flex justify-around items-center h-16">
                     {navItems.map((item) => {
                         const isActive = location.pathname === item.path;
@@ -116,19 +116,15 @@ export const Layout = ({ children }: LayoutProps) => {
                                 key={item.path}
                                 to={item.path}
                                 className={clsx(
-                                    'relative flex flex-col items-center gap-1 p-2 rounded-xl transition-all duration-300',
+                                    'relative flex flex-col items-center gap-1 p-2 rounded-xl transition-colors duration-200',
                                     isActive ? 'text-[#FDB813]' : 'text-zinc-500'
                                 )}
                             >
                                 {isActive && (
-                                    <motion.div
-                                        layoutId="mobile-nav-indicator"
-                                        className="absolute inset-0 bg-[#FDB813]/10 rounded-xl border border-[#FDB813]/20"
-                                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                                    />
+                                    <div className="absolute inset-0 bg-[#FDB813]/10 rounded-xl border border-[#FDB813]/20" />
                                 )}
                                 <item.icon className={clsx(
-                                    "w-6 h-6 relative z-10 transition-transform duration-300",
+                                    "w-6 h-6 relative z-10",
                                     isActive && "scale-110"
                                 )} />
                                 <span className="text-xs font-medium relative z-10">{item.label}</span>
