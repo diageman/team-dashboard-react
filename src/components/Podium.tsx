@@ -2,6 +2,8 @@ import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 import { Sparkles, Zap, Crown } from 'lucide-react';
 
+import { DEFAULT_AVATAR } from '../lib/constants';
+
 interface PodiumItem {
     id: string;
     name: string;
@@ -86,10 +88,10 @@ export const Podium = ({ title, subtitle, items, type = 'default' }: PodiumProps
                                     whileHover={{ scale: 1.1, rotate: 5 }}
                                 >
                                     <img
-                                        src={team1Leader.avatar}
+                                        src={team1Leader?.avatar || DEFAULT_AVATAR}
                                         className="w-12 h-12 rounded-full object-cover border-2 border-blue-400 shadow-lg shadow-blue-500/20 group-hover:shadow-blue-500/40 transition-shadow"
                                         onError={(e) => {
-                                            (e.target as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25' viewBox='0 0 48 48'%3E%3Crect fill='%231e3a8a' width='48' height='48'/%3E%3C/svg%3E";
+                                            (e.target as HTMLImageElement).src = DEFAULT_AVATAR;
                                         }}
                                     />
                                 </motion.div>
@@ -122,10 +124,10 @@ export const Podium = ({ title, subtitle, items, type = 'default' }: PodiumProps
                                     whileHover={{ scale: 1.1, rotate: -5 }}
                                 >
                                     <img
-                                        src={team2Leader.avatar}
+                                        src={team2Leader?.avatar || DEFAULT_AVATAR}
                                         className="w-12 h-12 rounded-full object-cover border-2 border-rose-400 shadow-lg shadow-rose-500/20 group-hover:shadow-rose-500/40 transition-shadow"
                                         onError={(e) => {
-                                            (e.target as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25' viewBox='0 0 48 48'%3E%3Crect fill='%23881337' width='48' height='48'/%3E%3C/svg%3E";
+                                            (e.target as HTMLImageElement).src = DEFAULT_AVATAR;
                                         }}
                                     />
                                 </motion.div>
@@ -197,14 +199,14 @@ export const Podium = ({ title, subtitle, items, type = 'default' }: PodiumProps
 
                                         <div className="relative mt-2 mb-2">
                                             <img
-                                                src={item.avatar}
+                                                src={item.avatar || DEFAULT_AVATAR}
                                                 alt={item.name}
                                                 className={clsx(
                                                     "w-20 h-20 rounded-full object-cover border-4 shadow-xl",
                                                     isGold ? 'border-amber-400' : isSilver ? 'border-zinc-400' : 'border-orange-700'
                                                 )}
                                                 onError={(e) => {
-                                                    (e.target as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Crect fill='%23334155' width='120' height='120'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-size='48' fill='%2394a3b8'%3E👤%3C/text%3E%3C/svg%3E";
+                                                    (e.target as HTMLImageElement).src = DEFAULT_AVATAR;
                                                 }}
                                             />
                                             {isPremium && isGold && (
@@ -236,10 +238,10 @@ export const Podium = ({ title, subtitle, items, type = 'default' }: PodiumProps
                             >
                                 <div className="font-mono text-zinc-500 font-bold w-8 text-center text-lg">#{item.rank}</div>
                                 <img
-                                    src={item.avatar}
+                                    src={item.avatar || DEFAULT_AVATAR}
                                     className="w-12 h-12 rounded-full object-cover border border-secondary"
                                     onError={(e) => {
-                                        (e.target as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Crect fill='%23334155' width='120' height='120'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-size='48' fill='%2394a3b8'%3E👤%3C/text%3E%3C/svg%3E";
+                                        (e.target as HTMLImageElement).src = DEFAULT_AVATAR;
                                     }}
                                 />
                                 <div className="flex-1">

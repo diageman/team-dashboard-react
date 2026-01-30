@@ -6,6 +6,14 @@ import { Podium } from '../components/Podium';
 import { Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+// Helper: Convert seconds to H:MM:SS
+const secondsToTime = (totalSeconds: number): string => {
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = Math.floor(totalSeconds % 60);
+    return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+};
+
 export const Dashboard = () => {
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [loading, setLoading] = useState(true);
@@ -114,7 +122,7 @@ export const Dashboard = () => {
                 avatar: e.avatar,
                 team: e.team,
                 value: metric === 'kpi' ? `${e.stats![metric]}%`
-                    : metric === 'responseTime' ? `${e.stats![metric]} мин`
+                    : metric === 'responseTime' ? secondsToTime(e.stats![metric])
                         : e.stats![metric],
                 rank: (index + 1)
             }));

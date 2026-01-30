@@ -26,29 +26,33 @@ export const saveEmployeeData = async (
     mode: 'week' | 'day' = 'week'
 ): Promise<void> => {
     try {
-        const employeeId = id || crypto.randomUUID();
-        const employeeRef = doc(db, COLLECTION_NAME, employeeId);
+        let employee: Employee | null = null;
+        let employeeId = id;
 
-        let employee: Employee;
+        // If no ID provided, try to find existing employee by name + team
+        if (!id) {
+            const allEmployees = await fetchEmployees();
+            const existing = allEmployees.find(
+                e => e.name.toLowerCase() === name.toLowerCase() && e.team === team
+            );
+            if (existing) {
+                employee = existing;
+                employeeId = existing.id;
+            }
+        }
 
-        if (id) {
-            // Check if exists
+        // If ID provided or found by name, try to load existing data
+        if (employeeId) {
+            const employeeRef = doc(db, COLLECTION_NAME, employeeId);
             const docSnap = await getDoc(employeeRef);
             if (docSnap.exists()) {
                 employee = docSnap.data() as Employee;
-            } else {
-                // Fallback
-                employee = {
-                    id: employeeId,
-                    name,
-                    team: team as any,
-                    avatar,
-                    weeks: {},
-                    days: {}
-                };
             }
-        } else {
-            // New employee
+        }
+
+        // If still no employee, create new
+        if (!employee) {
+            employeeId = crypto.randomUUID();
             employee = {
                 id: employeeId,
                 name,
@@ -89,6 +93,8 @@ export const saveEmployeeData = async (
             }
         }
 
+        // Save to Firestore
+        const employeeRef = doc(db, COLLECTION_NAME, employeeId as string);
         await setDoc(employeeRef, employee);
     } catch (e) {
         console.error("Error saving employee: ", e);

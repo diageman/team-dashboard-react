@@ -8,11 +8,25 @@ import { getCroppedImg } from '../lib/imageUtils';
 import { Camera, X, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+// Helper: Convert HH:MM:SS to total seconds
+const timeToSeconds = (timeStr: string): number => {
+    if (!timeStr || !timeStr.includes(':')) return 0;
+    const parts = timeStr.split(':').map(p => parseInt(p) || 0);
+    if (parts.length === 3) {
+        return parts[0] * 3600 + parts[1] * 60 + parts[2];
+    } else if (parts.length === 2) {
+        return parts[0] * 60 + parts[1];
+    }
+    return 0;
+};
+
+import { DEFAULT_AVATAR } from '../lib/constants';
+
 export const AddEmployee = () => {
     const [formData, setFormData] = useState({
         name: '',
         team: '',
-        avatar: '',
+        avatar: DEFAULT_AVATAR,
         month: new Date().toISOString().slice(0, 7),
         weekStartDate: '',
         weekEndDate: '',
@@ -35,6 +49,7 @@ export const AddEmployee = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const editId = searchParams.get('editId');
+    const dataLoadedRef = useRef(false);
 
     useEffect(() => {
         if (!isAuthenticated()) {
@@ -44,17 +59,74 @@ export const AddEmployee = () => {
         }
 
         const loadEmployee = async () => {
-            if (editId) {
+            if (editId && !dataLoadedRef.current) {
+                dataLoadedRef.current = true;
                 const employees = await fetchEmployees();
                 const emp = employees.find(e => e.id === editId);
                 if (emp) {
+                    // Find the most recent entry (week or day)
+                    let latestStats: any = null;
+                    let latestMode: 'week' | 'day' = 'week';
+                    let latestMonth = '';
+                    let latestWeekStart = '';
+                    let latestWeekEnd = '';
+                    let latestDayDate = '';
+
+                    // Check weeks
+                    if (emp.weeks) {
+                        const months = Object.keys(emp.weeks).sort().reverse();
+                        for (const month of months) {
+                            const weeks = Object.keys(emp.weeks[month]).sort().reverse();
+                            if (weeks.length > 0) {
+                                latestStats = emp.weeks[month][weeks[0]];
+                                latestMode = 'week';
+                                latestMonth = month;
+                                latestWeekStart = weeks[0];
+                                latestWeekEnd = latestStats.endDate || weeks[0];
+                                break;
+                            }
+                        }
+                    }
+
+                    // Check days (compare with weeks to get the most recent)
+                    if (emp.days) {
+                        const days = Object.keys(emp.days).sort().reverse();
+                        if (days.length > 0) {
+                            const latestDay = days[0];
+                            // If no week data or day is more recent
+                            if (!latestStats || latestDay > latestWeekStart) {
+                                latestStats = emp.days[latestDay];
+                                latestMode = 'day';
+                                latestDayDate = latestDay;
+                                latestMonth = latestDay.slice(0, 7);
+                            }
+                        }
+                    }
+
+                    // Helper to convert seconds to H:MM:SS
+                    const secondsToTimeStr = (secs: number): string => {
+                        const h = Math.floor(secs / 3600);
+                        const m = Math.floor((secs % 3600) / 60);
+                        const s = Math.floor(secs % 60);
+                        return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+                    };
+
                     setFormData(prev => ({
                         ...prev,
                         name: emp.name,
                         team: emp.team,
-                        avatar: emp.avatar
+                        avatar: emp.avatar,
+                        mode: latestMode,
+                        month: latestMonth || prev.month,
+                        weekStartDate: latestWeekStart || prev.weekStartDate,
+                        weekEndDate: latestWeekEnd || prev.weekEndDate,
+                        dayDate: latestDayDate || prev.dayDate,
+                        kpi: latestStats?.kpi?.toString() || '',
+                        chats: latestStats?.chats?.toString() || '',
+                        responseTime: latestStats?.responseTime ? secondsToTimeStr(latestStats.responseTime) : '',
+                        activities: latestStats?.activities?.join('\n') || ''
                     }));
-                    toast('Режим редактирования: ФИО и Команда заполнены.', { icon: '✏️' });
+                    toast('Данные загружены для редактирования', { icon: '✏️' });
                 }
             }
         };
@@ -128,7 +200,7 @@ export const AddEmployee = () => {
                 {
                     kpi: parseFloat(formData.kpi) || 0,
                     chats: parseInt(formData.chats) || 0,
-                    responseTime: parseFloat(formData.responseTime) || 0,
+                    responseTime: timeToSeconds(formData.responseTime),
                     activities: formData.activities.split('\n').filter(s => s.trim()),
                     startDate: formData.mode === 'day' ? formData.dayDate : formData.weekStartDate,
                     endDate: formData.mode === 'day' ? formData.dayDate : formData.weekEndDate
@@ -298,14 +370,15 @@ export const AddEmployee = () => {
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs uppercase font-bold text-zinc-500 mb-1">Время ответа (мин)</label>
+                                <label className="block text-xs uppercase font-bold text-zinc-500 mb-1">Время ответа</label>
                                 <Input
-                                    type="number"
-                                    step="0.1"
+                                    type="text"
+                                    placeholder="1:37:47 или 97:47"
                                     name="responseTime"
                                     value={formData.responseTime}
                                     onChange={handleInputChange}
                                 />
+                                <span className="text-[10px] text-zinc-600 mt-1">Формат: Ч:ММ:СС или ММ:СС</span>
                             </div>
                         </div>
 

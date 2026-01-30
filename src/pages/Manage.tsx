@@ -5,6 +5,7 @@ import { Button, Input } from '../components/Ui';
 import { Trash2, Edit, LogIn, LogOut, ShieldAlert } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
+import { DEFAULT_AVATAR } from '../lib/constants';
 
 export const Manage = () => {
     const [isAdmin, setIsAdmin] = useState(false);
@@ -111,40 +112,85 @@ export const Manage = () => {
                             <tr>
                                 <th className="p-4">Сотрудник</th>
                                 <th className="p-4">Команда</th>
+                                <th className="p-4">Данные</th>
                                 <th className="p-4">Действия</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-secondary">
-                            {filteredEmployees.map((emp) => (
-                                <tr key={emp.id} className="hover:bg-secondary/30 transition-colors">
-                                    <td className="p-4 flex items-center gap-3">
-                                        <img src={emp.avatar} alt="" className="w-10 h-10 rounded-full object-cover" />
-                                        <span className="font-semibold">{emp.name}</span>
-                                    </td>
-                                    <td className="p-4 text-zinc-300">{emp.team}</td>
-                                    <td className="p-4">
-                                        <div className="flex gap-2">
-                                            <Button
-                                                variant="secondary"
-                                                className="px-3 py-1.5 text-xs"
-                                                onClick={() => handleEdit(emp.id)}
-                                            >
-                                                <Edit className="w-3 h-3 mr-1" /> Изменить
-                                            </Button>
-                                            <Button
-                                                variant="danger"
-                                                className="px-3 py-1.5 text-xs"
-                                                onClick={() => handleDelete(emp.id)}
-                                            >
-                                                <Trash2 className="w-3 h-3 mr-1" /> Удалить
-                                            </Button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
+                            {filteredEmployees.map((emp) => {
+                                // Get weeks info with dates
+                                const weeksList: string[] = [];
+                                if (emp.weeks) {
+                                    Object.entries(emp.weeks).forEach(([month, weeksData]) => {
+                                        Object.keys(weeksData).forEach(startDate => {
+                                            const endDate = weeksData[startDate]?.endDate;
+                                            const start = new Date(startDate).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+                                            const end = endDate ? new Date(endDate).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' }) : start;
+                                            weeksList.push(`${start} — ${end}`);
+                                        });
+                                    });
+                                }
+
+                                // Get days info with dates
+                                const daysList = Object.keys(emp.days || {}).map(date =>
+                                    new Date(date).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' })
+                                );
+
+                                return (
+                                    <tr key={emp.id} className="hover:bg-secondary/30 transition-colors">
+                                        <td className="p-4 flex items-center gap-3">
+                                            <img
+                                                src={emp.avatar || DEFAULT_AVATAR}
+                                                alt=""
+                                                className="w-10 h-10 rounded-full object-cover"
+                                                onError={(e) => { (e.target as HTMLImageElement).src = DEFAULT_AVATAR; }}
+                                            />
+                                            <span className="font-semibold">{emp.name}</span>
+                                        </td>
+                                        <td className="p-4 text-zinc-300">{emp.team}</td>
+                                        <td className="p-4">
+                                            <div className="text-xs space-y-1 max-w-[200px]">
+                                                {weeksList.length > 0 && (
+                                                    <div className="text-blue-400">
+                                                        <span className="font-bold">Недели:</span> {weeksList.slice(0, 3).join(', ')}
+                                                        {weeksList.length > 3 && <span className="text-zinc-500"> +{weeksList.length - 3}</span>}
+                                                    </div>
+                                                )}
+                                                {daysList.length > 0 && (
+                                                    <div className="text-green-400">
+                                                        <span className="font-bold">Дни:</span> {daysList.slice(0, 3).join(', ')}
+                                                        {daysList.length > 3 && <span className="text-zinc-500"> +{daysList.length - 3}</span>}
+                                                    </div>
+                                                )}
+                                                {weeksList.length === 0 && daysList.length === 0 && (
+                                                    <span className="text-zinc-500">Нет данных</span>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td className="p-4">
+                                            <div className="flex gap-2">
+                                                <Button
+                                                    variant="secondary"
+                                                    className="px-3 py-1.5 text-xs"
+                                                    onClick={() => handleEdit(emp.id)}
+                                                >
+                                                    <Edit className="w-3 h-3 mr-1" /> Изменить
+                                                </Button>
+                                                <Button
+                                                    variant="danger"
+                                                    className="px-3 py-1.5 text-xs"
+                                                    onClick={() => handleDelete(emp.id)}
+                                                >
+                                                    <Trash2 className="w-3 h-3 mr-1" /> Удалить
+                                                </Button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                             {filteredEmployees.length === 0 && (
                                 <tr>
-                                    <td colSpan={3} className="p-8 text-center text-zinc-500">
+                                    <td colSpan={4} className="p-8 text-center text-zinc-500">
                                         Сотрудники не найдены
                                     </td>
                                 </tr>
