@@ -128,21 +128,9 @@ export const Dashboard = () => {
             data: getLeaderboard('kpi', 'desc')
         },
         {
-            title: 'KPI - ПРЕМИЯ',
-            subtitle: 'Абсолютный победитель по KPI',
-            type: 'premium',
-            data: getLeaderboard('kpi', 'desc')
-        },
-        {
             title: 'Количество чатов',
             subtitle: 'Максимальная производительность',
             type: 'default',
-            data: getLeaderboard('chats', 'desc')
-        },
-        {
-            title: 'Бонус за чаты - ПРЕМИЯ',
-            subtitle: 'Чемпион по количеству чатов',
-            type: 'premium',
             data: getLeaderboard('chats', 'desc')
         },
         {
@@ -152,21 +140,9 @@ export const Dashboard = () => {
             data: getLeaderboard('responseTime', 'asc') // Lower is better
         },
         {
-            title: 'Самый быстрый ответ водителю - ПРЕМИЯ',
-            subtitle: 'Молниеносная реакция (минуты)',
-            type: 'premium',
-            data: getLeaderboard('responseTime', 'asc')
-        },
-        {
             title: 'Активность и идеи',
             subtitle: 'Вклад в развитие',
             type: 'default',
-            data: getLeaderboard('activityCount', 'desc')
-        },
-        {
-            title: 'Активность - ПРЕМИЯ',
-            subtitle: 'Лидер инноваций',
-            type: 'premium',
             data: getLeaderboard('activityCount', 'desc')
         },
     ];
