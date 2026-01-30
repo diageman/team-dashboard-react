@@ -4,6 +4,7 @@ import { calculateMonthlyStats, getAvailableMonths } from '../lib/calculations';
 import { Employee } from '../types';
 import { Podium } from '../components/Podium';
 import { Loader2 } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export const Dashboard = () => {
     const [employees, setEmployees] = useState<Employee[]>([]);
@@ -156,22 +157,31 @@ export const Dashboard = () => {
 
     return (
         <div>
-            <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
+            <motion.div
+                className="flex flex-col md:flex-row justify-between items-center mb-10 gap-4"
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+            >
                 <div>
-                    <h2 className="text-3xl font-bold text-[#FDB813] mb-2">Обзор команд</h2>
+                    <h2 className="text-3xl font-bold gradient-text mb-2">Обзор команд</h2>
                     <div className="flex gap-2 mb-2">
-                        <button
+                        <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
                             onClick={() => setViewMode('week')}
-                            className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${viewMode === 'week' ? 'bg-[#FDB813] text-black border-[#FDB813]' : 'bg-transparent text-zinc-500 border-zinc-700'}`}
+                            className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border transition-all duration-300 ${viewMode === 'week' ? 'bg-[#FDB813] text-black border-[#FDB813] shadow-lg shadow-[#FDB813]/20' : 'bg-transparent text-zinc-500 border-zinc-700 hover:border-[#FDB813]/50'}`}
                         >
                             Неделя / Месяц
-                        </button>
-                        <button
+                        </motion.button>
+                        <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
                             onClick={() => setViewMode('day')}
-                            className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${viewMode === 'day' ? 'bg-[#FDB813] text-black border-[#FDB813]' : 'bg-transparent text-zinc-500 border-zinc-700'}`}
+                            className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border transition-all duration-300 ${viewMode === 'day' ? 'bg-[#FDB813] text-black border-[#FDB813] shadow-lg shadow-[#FDB813]/20' : 'bg-transparent text-zinc-500 border-zinc-700 hover:border-[#FDB813]/50'}`}
                         >
                             Ежедневный
-                        </button>
+                        </motion.button>
                     </div>
                 </div>
 
@@ -219,20 +229,32 @@ export const Dashboard = () => {
                         </div>
                     )}
                 </div>
-            </div>
+            </motion.div>
 
-            <div className="space-y-16">
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ staggerChildren: 0.15 }}
+                className="space-y-16"
+            >
                 {sections.map((section, idx) => (
-                    <section key={idx} className="scroll-mt-24">
+                    <motion.section
+                        key={idx}
+                        initial={{ opacity: 0, y: 30 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true, margin: "-50px" }}
+                        transition={{ duration: 0.5, type: "spring", bounce: 0.3 }}
+                        className="scroll-mt-24"
+                    >
                         <Podium
                             title={section.title}
                             subtitle={section.subtitle}
                             items={section.data}
                             type={section.type as any}
                         />
-                    </section>
+                    </motion.section>
                 ))}
-            </div>
-        </div>
+            </motion.div>
+        </div >
     );
 };

@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import Cropper from 'react-easy-crop';
 import { getCroppedImg } from '../lib/imageUtils';
 import { Camera, X, Check } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export const AddEmployee = () => {
     const [formData, setFormData] = useState({
@@ -209,49 +210,67 @@ export const AddEmployee = () => {
                             </button>
                         </div>
 
-                        {formData.mode === 'week' ? (
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <div>
-                                    <label className="block text-sm font-medium text-zinc-400 mb-2">Отчетный Месяц</label>
-                                    <Input
-                                        type="month"
-                                        name="month"
-                                        value={formData.month}
-                                        onChange={handleInputChange}
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-zinc-400 mb-2">Начало недели</label>
-                                    <Input
-                                        type="date"
-                                        name="weekStartDate"
-                                        value={formData.weekStartDate}
-                                        onChange={handleInputChange}
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-zinc-400 mb-2">Конец недели</label>
-                                    <Input
-                                        type="date"
-                                        name="weekEndDate"
-                                        value={formData.weekEndDate}
-                                        onChange={handleInputChange}
-                                    />
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <label className="block text-sm font-medium text-zinc-400 mb-2">Дата отчета</label>
-                                    <Input
-                                        type="date"
-                                        name="dayDate"
-                                        value={formData.dayDate}
-                                        onChange={handleInputChange}
-                                    />
-                                </div>
-                            </div>
-                        )}
+                        <div className="relative min-h-[120px]">
+                            <AnimatePresence mode="wait">
+                                {formData.mode === 'week' ? (
+                                    <motion.div
+                                        key="week"
+                                        initial={{ opacity: 0, x: -20, position: 'absolute' }}
+                                        animate={{ opacity: 1, x: 0, position: 'relative' }}
+                                        exit={{ opacity: 0, x: 20, position: 'absolute' }}
+                                        transition={{ duration: 0.3 }}
+                                        className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full"
+                                    >
+                                        <div>
+                                            <label className="block text-sm font-medium text-zinc-400 mb-2">Отчетный Месяц</label>
+                                            <Input
+                                                type="month"
+                                                name="month"
+                                                value={formData.month}
+                                                onChange={handleInputChange}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-zinc-400 mb-2">Начало недели</label>
+                                            <Input
+                                                type="date"
+                                                name="weekStartDate"
+                                                value={formData.weekStartDate}
+                                                onChange={handleInputChange}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-zinc-400 mb-2">Конец недели</label>
+                                            <Input
+                                                type="date"
+                                                name="weekEndDate"
+                                                value={formData.weekEndDate}
+                                                onChange={handleInputChange}
+                                            />
+                                        </div>
+                                    </motion.div>
+                                ) : (
+                                    <motion.div
+                                        key="day"
+                                        initial={{ opacity: 0, x: 20, position: 'absolute' }}
+                                        animate={{ opacity: 1, x: 0, position: 'relative' }}
+                                        exit={{ opacity: 0, x: -20, position: 'absolute' }}
+                                        transition={{ duration: 0.3 }}
+                                        className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full"
+                                    >
+                                        <div>
+                                            <label className="block text-sm font-medium text-zinc-400 mb-2">Дата отчета</label>
+                                            <Input
+                                                type="date"
+                                                name="dayDate"
+                                                value={formData.dayDate}
+                                                onChange={handleInputChange}
+                                            />
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
                     </div>
 
                     {/* Metrics Section */}

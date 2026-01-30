@@ -9,12 +9,191 @@
     --taxi-black: #0A0A0A;
     --taxi-dark: #121212;
     --taxi-surface: #1A1A1A;
+    --gold-gradient: linear-gradient(135deg, #FDB813 0%, #FFD700 50%, #FFA500 100%);
+    --glass-blur: 20px;
   }
 
   body {
     @apply antialiased;
     background: #0A0A0A;
+    overflow-x: hidden;
   }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* ============================================
+   PREMIUM KEYFRAME ANIMATIONS
+   ============================================ */
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+
+  50% {
+    transform: translateY(-10px) rotate(1deg);
+  }
+}
+
+@keyframes pulse-glow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(253, 184, 19, 0.3),
+      0 0 40px rgba(253, 184, 19, 0.1);
+  }
+
+  50% {
+    box-shadow: 0 0 30px rgba(253, 184, 19, 0.5),
+      0 0 60px rgba(253, 184, 19, 0.2);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes border-dance {
+
+  0%,
+  100% {
+    border-color: rgba(253, 184, 19, 0.2);
+  }
+
+  50% {
+    border-color: rgba(253, 184, 19, 0.5);
+  }
+}
+
+@keyframes subtle-bounce {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes rotate-gradient {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============================================
+   PREMIUM ANIMATION UTILITIES
+   ============================================ */
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg,
+      transparent 0%,
+      rgba(253, 184, 19, 0.1) 50%,
+      transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient-shift 8s ease infinite;
+}
+
+.animate-border {
+  animation: border-dance 2s ease-in-out infinite;
+}
+
+.animate-fade-in {
+  animation: fade-in-up 0.5s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.4s ease-out forwards;
+}
+
+/* Stagger delays for lists */
+.stagger-1 {
+  animation-delay: 0.1s;
+}
+
+.stagger-2 {
+  animation-delay: 0.2s;
+}
+
+.stagger-3 {
+  animation-delay: 0.3s;
+}
+
+.stagger-4 {
+  animation-delay: 0.4s;
+}
+
+.stagger-5 {
+  animation-delay: 0.5s;
 }
 
 /* Custom scrollbar */
@@ -27,16 +206,16 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(253, 184, 19, 0.3);
+  background: linear-gradient(180deg, rgba(253, 184, 19, 0.5), rgba(253, 184, 19, 0.2));
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(253, 184, 19, 0.5);
+  background: linear-gradient(180deg, rgba(253, 184, 19, 0.7), rgba(253, 184, 19, 0.4));
 }
 
 /* ============================================
-   LIQUID GLASS - iOS 26 Style
+   LIQUID GLASS - iOS 26 Style (Enhanced)
    ============================================ */
 
 .liquid-glass {
@@ -51,6 +230,15 @@
   box-shadow:
     inset 0 1px 1px rgba(255, 255, 255, 0.05),
     0 8px 32px rgba(0, 0, 0, 0.4);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.liquid-glass:hover {
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.08),
+    0 12px 48px rgba(0, 0, 0, 0.5),
+    0 0 30px rgba(253, 184, 19, 0.1);
+  border-color: rgba(253, 184, 19, 0.25);
 }
 
 .liquid-glass-subtle {
@@ -61,6 +249,14 @@
   -webkit-backdrop-filter: blur(16px) saturate(150%);
   border: 1px solid rgba(253, 184, 19, 0.1);
   border-radius: 16px;
+  transition: all 0.3s ease;
+}
+
+.liquid-glass-subtle:hover {
+  background: linear-gradient(135deg,
+      rgba(253, 184, 19, 0.08) 0%,
+      rgba(20, 20, 20, 0.8) 100%);
+  border-color: rgba(253, 184, 19, 0.2);
 }
 
 .liquid-glass-header {
@@ -93,16 +289,111 @@
   box-shadow:
     inset 0 1px 1px rgba(255, 255, 255, 0.03),
     0 4px 24px rgba(0, 0, 0, 0.3);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Gradient text - yellow */
+.glass-panel:hover {
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.05),
+    0 8px 40px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(253, 184, 19, 0.08);
+}
+
+/* ============================================
+   PREMIUM CARD STYLES
+   ============================================ */
+
+.premium-card {
+  position: relative;
+  background: linear-gradient(145deg,
+      rgba(30, 30, 30, 0.9) 0%,
+      rgba(15, 15, 15, 0.95) 100%);
+  border-radius: 24px;
+  border: 1px solid rgba(253, 184, 19, 0.1);
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.premium-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg,
+      transparent 0%,
+      rgba(253, 184, 19, 0.03) 50%,
+      transparent 100%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.premium-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(253, 184, 19, 0.25);
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    0 0 40px rgba(253, 184, 19, 0.1);
+}
+
+.premium-card:hover::before {
+  opacity: 1;
+}
+
+/* Gold shimmer effect for special elements */
+.gold-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.gold-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg,
+      transparent 0%,
+      rgba(253, 184, 19, 0.15) 50%,
+      transparent 100%);
+  transform: translateX(-100%);
+  animation: shimmer 3s infinite;
+}
+
+/* ============================================
+   GRADIENT TEXT EFFECTS
+   ============================================ */
+
 .gradient-text {
+  @apply bg-clip-text text-transparent;
+  background-image: linear-gradient(135deg, #FDB813 0%, #FFCE3D 50%, #FFA500 100%);
+  background-size: 200% 200%;
+  animation: gradient-shift 4s ease infinite;
+}
+
+.gradient-text-static {
   @apply bg-clip-text text-transparent;
   background-image: linear-gradient(135deg, #FDB813 0%, #FFCE3D 100%);
 }
 
 /* ============================================
-   TAXI THEMED UTILITIES - Minimal
+   GLOWING EFFECTS
+   ============================================ */
+
+.glow-yellow {
+  box-shadow: 0 0 20px rgba(253, 184, 19, 0.3),
+    0 0 40px rgba(253, 184, 19, 0.1);
+}
+
+.glow-yellow-intense {
+  box-shadow: 0 0 30px rgba(253, 184, 19, 0.5),
+    0 0 60px rgba(253, 184, 19, 0.2),
+    0 0 90px rgba(253, 184, 19, 0.1);
+}
+
+.text-glow {
+  text-shadow: 0 0 20px rgba(253, 184, 19, 0.5),
+    0 0 40px rgba(253, 184, 19, 0.3);
+}
+
+/* ============================================
+   TAXI THEMED UTILITIES - Enhanced
    ============================================ */
 
 .taxi-text {
@@ -115,6 +406,11 @@
 
 .taxi-border {
   border-color: rgba(253, 184, 19, 0.2);
+  transition: border-color 0.3s ease;
+}
+
+.taxi-border:hover {
+  border-color: rgba(253, 184, 19, 0.4);
 }
 
 .taxi-border-accent {
@@ -125,19 +421,125 @@
 .taxi-highlight {
   background: rgba(253, 184, 19, 0.1);
   border: 1px solid rgba(253, 184, 19, 0.2);
+  transition: all 0.3s ease;
 }
+
+.taxi-highlight:hover {
+  background: rgba(253, 184, 19, 0.15);
+  border-color: rgba(253, 184, 19, 0.3);
+}
+
+/* ============================================
+   INTERACTIVE ELEMENTS
+   ============================================ */
 
 /* Input focus styling */
 input:focus,
 select:focus,
 textarea:focus {
   outline: none;
-  border-color: rgba(253, 184, 19, 0.4) !important;
-  box-shadow: 0 0 0 3px rgba(253, 184, 19, 0.1);
+  border-color: rgba(253, 184, 19, 0.5) !important;
+  box-shadow: 0 0 0 4px rgba(253, 184, 19, 0.1),
+    0 0 20px rgba(253, 184, 19, 0.1);
+  transition: all 0.3s ease;
 }
 
-/* Button hover subtle */
+/* Button hover with glow */
+.btn-taxi {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 .btn-taxi:hover {
   background: linear-gradient(135deg, #FFCE3D 0%, #FDB813 100%);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(253, 184, 19, 0.3),
+    0 0 20px rgba(253, 184, 19, 0.2);
+}
+
+.btn-taxi:active {
+  transform: translateY(0);
+}
+
+/* ============================================
+   SPECIAL EFFECTS
+   ============================================ */
+
+/* Animated gradient border */
+.gradient-border {
+  position: relative;
+  background: transparent;
+  z-index: 0;
+}
+
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(45deg, #FDB813, #FFD700, #FFA500, #FDB813);
+  background-size: 400% 400%;
+  border-radius: inherit;
+  z-index: -1;
+  animation: gradient-shift 4s ease infinite;
+  opacity: 0.5;
+  transition: opacity 0.3s ease;
+}
+
+.gradient-border:hover::before {
+  opacity: 1;
+}
+
+.gradient-border::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  background: #0A0A0A;
+  border-radius: inherit;
+  z-index: -1;
+}
+
+/* Ripple effect */
+.ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at var(--x, 50%) var(--y, 50%),
+      rgba(253, 184, 19, 0.3) 0%,
+      transparent 60%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.ripple:hover::after {
+  opacity: 1;
+}
+
+/* Number counter animation */
+.counter-up {
+  display: inline-block;
+  animation: fade-in-up 0.5s ease-out forwards;
+}
+
+/* Trophy/Medal glow */
+.medal-glow {
+  filter: drop-shadow(0 0 10px rgba(253, 184, 19, 0.5));
+}
+
+/* ============================================
+   RESPONSIVE ANIMATIONS
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
