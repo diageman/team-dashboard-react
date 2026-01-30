@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { Layout } from './components/Layout';
 import { Dashboard } from './pages/Dashboard';
@@ -7,7 +7,7 @@ import { Manage } from './pages/Manage';
 
 function App() {
     return (
-        <BrowserRouter>
+        <HashRouter>
             <Layout>
                 <Routes>
                     <Route path="/" element={<Dashboard />} />
@@ -33,7 +33,7 @@ function App() {
                     },
                 }}
             />
-        </BrowserRouter>
+        </HashRouter>
     );
 }
 

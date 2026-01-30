@@ -1,18 +1,25 @@
 import { useState, useMemo, useEffect } from 'react';
-import { getEmployees } from '../lib/storage';
+import { fetchEmployees } from '../lib/storage';
 import { calculateMonthlyStats, getAvailableMonths } from '../lib/calculations';
 import { Employee } from '../types';
 import { Podium } from '../components/Podium';
+import { Loader2 } from 'lucide-react';
 
 export const Dashboard = () => {
     const [employees, setEmployees] = useState<Employee[]>([]);
+    const [loading, setLoading] = useState(true);
     const [selectedMonth, setSelectedMonth] = useState<string>(
         new Date().toISOString().slice(0, 7)
     );
-    const [selectedWeek, setSelectedWeek] = useState<string>('all'); // 'all' or specific date range string
+    const [selectedWeek, setSelectedWeek] = useState<string>('all');
 
     useEffect(() => {
-        setEmployees(getEmployees());
+        const load = async () => {
+            const data = await fetchEmployees();
+            setEmployees(data);
+            setLoading(false);
+        };
+        load();
     }, []);
 
     const availableMonths = useMemo(() => getAvailableMonths(employees), [employees]);
@@ -104,6 +111,14 @@ export const Dashboard = () => {
                 rank: (index + 1)
             }));
     };
+
+    if (loading) {
+        return (
+            <div className="flex h-[50vh] items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-taxi-yellow" />
+            </div>
+        );
+    }
 
     const sections = [
         {

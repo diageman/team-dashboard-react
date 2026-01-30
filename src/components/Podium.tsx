@@ -27,6 +27,10 @@ export const Podium = ({ title, subtitle, items, type = 'default' }: PodiumProps
     const top3 = items.filter(i => i.rank <= 3).sort((a, b) => a.rank - b.rank);
     const others = items.filter(i => i.rank > 3).sort((a, b) => a.rank - b.rank);
 
+    // Find best of each team (since items are sorted by rank, first find is best)
+    const team1Leader = items.find(i => i.team === 'Команда 1');
+    const team2Leader = items.find(i => i.team === 'Команда 2');
+
     return (
         <div className="mb-12">
             <div className={clsx(
@@ -42,7 +46,62 @@ export const Podium = ({ title, subtitle, items, type = 'default' }: PodiumProps
                 <p className="text-zinc-400">{subtitle}</p>
             </div>
 
-            <div className="liquid-glass rounded-b-2xl overflow-hidden flex flex-col max-h-[800px]">
+            <div className="liquid-glass rounded-b-2xl overflow-hidden flex flex-col max-h-[1200px]">
+                {/* Team Battles Section */}
+                <div className="p-4 grid grid-cols-2 gap-4 border-b border-white/5 bg-black/20">
+                    {/* Team 1 Leader */}
+                    <div className="relative p-3 rounded-xl border border-blue-500/30 bg-blue-900/10 flex flex-col items-center text-center">
+                        <div className="absolute -top-3 bg-blue-500/20 text-blue-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-blue-500/50 uppercase tracking-wider">
+                            Команда 1
+                        </div>
+                        {team1Leader ? (
+                            <>
+                                <div className="mt-2 mb-2">
+                                    <img
+                                        src={team1Leader.avatar}
+                                        className="w-12 h-12 rounded-full object-cover border-2 border-blue-400"
+                                        onError={(e) => {
+                                            (e.target as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25' viewBox='0 0 48 48'%3E%3Crect fill='%231e3a8a' width='48' height='48'/%3E%3C/svg%3E";
+                                        }}
+                                    />
+                                </div>
+                                <div className="font-bold text-white text-sm leading-tight truncate w-full">{team1Leader.name}</div>
+                                <div className="text-blue-300 font-mono font-bold text-lg mt-1">{team1Leader.value}</div>
+                            </>
+                        ) : (
+                            <div className="text-zinc-500 text-xs py-4">Нет данных</div>
+                        )}
+                    </div>
+
+                    {/* Team 2 Leader */}
+                    <div className="relative p-3 rounded-xl border border-rose-500/30 bg-rose-900/10 flex flex-col items-center text-center">
+                        <div className="absolute -top-3 bg-rose-500/20 text-rose-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-rose-500/50 uppercase tracking-wider">
+                            Команда 2
+                        </div>
+                        {team2Leader ? (
+                            <>
+                                <div className="mt-2 mb-2">
+                                    <img
+                                        src={team2Leader.avatar}
+                                        className="w-12 h-12 rounded-full object-cover border-2 border-rose-400"
+                                        onError={(e) => {
+                                            (e.target as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25' viewBox='0 0 48 48'%3E%3Crect fill='%23881337' width='48' height='48'/%3E%3C/svg%3E";
+                                        }}
+                                    />
+                                </div>
+                                <div className="font-bold text-white text-sm leading-tight truncate w-full">{team2Leader.name}</div>
+                                <div className="text-rose-300 font-mono font-bold text-lg mt-1">{team2Leader.value}</div>
+                            </>
+                        ) : (
+                            <div className="text-zinc-500 text-xs py-4">Нет данных</div>
+                        )}
+                    </div>
+                </div>
+
+                <div className="text-center py-2 text-xs uppercase tracking-widest text-zinc-500 font-bold bg-black/40">
+                    Общий рейтинг
+                </div>
+
                 {/* Podium Section */}
                 {top3.length === 0 ? (
                     <div className="text-center py-10 text-zinc-500">Нет данных</div>

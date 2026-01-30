@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getEmployees, isAuthenticated, login, logout, deleteEmployee } from '../lib/storage';
+import { fetchEmployees, isAuthenticated, login, logout, deleteEmployee } from '../lib/storage';
 import { Employee } from '../types';
 import { Button, Input } from '../components/Ui';
 import { Trash2, Edit, LogIn, LogOut, ShieldAlert } from 'lucide-react';
@@ -15,8 +15,15 @@ export const Manage = () => {
 
     useEffect(() => {
         setIsAdmin(isAuthenticated());
-        setEmployees(getEmployees());
+
+        // Initial fetch
+        loadEmployees();
     }, []);
+
+    const loadEmployees = async () => {
+        const data = await fetchEmployees();
+        setEmployees(data);
+    };
 
     const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
@@ -35,10 +42,16 @@ export const Manage = () => {
         toast.success('Сессия завершена');
     };
 
-    const handleDelete = (id: string) => {
+    const handleDelete = async (id: string) => {
         if (window.confirm('Вы уверены? Это действие нельзя отменить.')) {
-            setEmployees(deleteEmployee(id));
-            toast.success('Сотрудник удален');
+            try {
+                await deleteEmployee(id);
+                toast.success('Сотрудник удален');
+                // Refresh list
+                loadEmployees();
+            } catch {
+                toast.error('Ошибка удаления');
+            }
         }
     };
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { saveEmployeeData, getEmployees, isAuthenticated } from '../lib/storage';
+import { saveEmployeeData, fetchEmployees, isAuthenticated } from '../lib/storage';
 import { Button, Input, Select } from '../components/Ui';
 import toast from 'react-hot-toast';
 import Cropper from 'react-easy-crop';
@@ -40,21 +40,25 @@ export const AddEmployee = () => {
             return;
         }
 
-        if (editId) {
-            const employees = getEmployees();
-            const emp = employees.find(e => e.id === editId);
-            if (emp) {
-                setFormData(prev => ({
-                    ...prev,
-                    name: emp.name,
-                    team: emp.team,
-                    avatar: emp.avatar
-                }));
-                toast('Режим редактирования: ФИО и Команда заполнены.', { icon: '✏️' });
+        const loadEmployee = async () => {
+            if (editId) {
+                const employees = await fetchEmployees();
+                const emp = employees.find(e => e.id === editId);
+                if (emp) {
+                    setFormData(prev => ({
+                        ...prev,
+                        name: emp.name,
+                        team: emp.team,
+                        avatar: emp.avatar
+                    }));
+                    toast('Режим редактирования: ФИО и Команда заполнены.', { icon: '✏️' });
+                }
             }
-        }
+        };
+        loadEmployee();
     }, [editId, navigate]);
 
+    // Image handlers
     const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
             const file = e.target.files[0];
@@ -91,7 +95,7 @@ export const AddEmployee = () => {
         }
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         if (!formData.name || !formData.team) {
@@ -105,12 +109,14 @@ export const AddEmployee = () => {
         }
 
         try {
-            saveEmployeeData(
+            await saveEmployeeData(
+                editId || null,
                 formData.name,
                 formData.team as any,
                 formData.avatar,
                 formData.month,
                 formData.weekStartDate,
+                formData.weekEndDate,
                 {
                     kpi: parseFloat(formData.kpi) || 0,
                     chats: parseInt(formData.chats) || 0,
@@ -135,7 +141,7 @@ export const AddEmployee = () => {
                 }));
             }
         } catch (err) {
-            toast.error('Ошибка сохранения. Возможно, фото слишком большое для LocalStorage.');
+            toast.error('Ошибка сохранения в базу данных.');
             console.error(err);
         }
     };

@@ -1,78 +1,103 @@
 import { Employee, WeeklyStats } from '../types';
-import { v4 as uuidv4 } from 'uuid';
+import { db } from './firebase';
+import { collection, getDocs, doc, setDoc, deleteDoc, getDoc } from 'firebase/firestore';
 
-const STORAGE_KEY = 'team_dashboard_v2_data';
+const COLLECTION_NAME = 'employees';
 
-export const getEmployees = (): Employee[] => {
+export const fetchEmployees = async (): Promise<Employee[]> => {
     try {
-        const data = localStorage.getItem(STORAGE_KEY);
-        return data ? JSON.parse(data) : [];
+        const querySnapshot = await getDocs(collection(db, COLLECTION_NAME));
+        return querySnapshot.docs.map(doc => doc.data() as Employee);
     } catch (error) {
-        console.error('Failed to parse employees', error);
+        console.error("Error fetching employees: ", error);
         return [];
     }
 };
 
-export const saveEmployeeData = (
+export const saveEmployeeData = async (
+    id: string | null,
     name: string,
-    team: 'Команда 1' | 'Команда 2',
+    team: string,
     avatar: string,
     month: string,
     weekStartDate: string,
+    weekEndDate: string,
     stats: WeeklyStats
-) => {
-    const employees = getEmployees();
+): Promise<void> => {
+    try {
+        const employeeId = id || crypto.randomUUID();
+        const employeeRef = doc(db, COLLECTION_NAME, employeeId);
 
-    // Smart update: Find existing employee by name + team
-    const existingIndex = employees.findIndex(
-        (e) => e.name.trim().toLowerCase() === name.trim().toLowerCase() && e.team === team
-    );
+        let employee: Employee;
 
-    if (existingIndex >= 0) {
-        // Update existing
-        const emp = employees[existingIndex];
-        if (!emp.weeks) emp.weeks = {};
-        if (!emp.weeks[month]) emp.weeks[month] = {};
-
-        // Overwrite week data (keyed by Start Date)
-        emp.weeks[month][weekStartDate] = stats;
-        // Update avatar if provided
-        if (avatar) emp.avatar = avatar;
-
-        employees[existingIndex] = emp;
-    } else {
-        // Create new
-        const newEmployee: Employee = {
-            id: uuidv4(),
-            name,
-            team,
-            avatar: avatar || '',
-            weeks: {
-                [month]: {
-                    [weekStartDate]: stats
-                }
+        if (id) {
+            // Check if exists
+            const docSnap = await getDoc(employeeRef);
+            if (docSnap.exists()) {
+                employee = docSnap.data() as Employee;
+            } else {
+                // Fallback
+                employee = {
+                    id: employeeId,
+                    name,
+                    team: team as any,
+                    avatar,
+                    weeks: {}
+                };
             }
-        };
-        employees.push(newEmployee);
+        } else {
+            // New employee
+            employee = {
+                id: employeeId,
+                name,
+                team: team as any,
+                avatar,
+                weeks: {}
+            };
+        }
+
+        // Update fields
+        employee.name = name;
+        employee.team = team as any;
+        if (avatar) employee.avatar = avatar;
+
+        if (!employee.weeks) employee.weeks = {};
+        if (!employee.weeks[month]) employee.weeks[month] = {};
+
+        // Save stats using start date as key
+        if (weekStartDate) {
+            employee.weeks[month][weekStartDate] = {
+                ...stats,
+                startDate: weekStartDate,
+                endDate: weekEndDate
+            };
+        }
+
+        await setDoc(employeeRef, employee);
+    } catch (e) {
+        console.error("Error saving employee: ", e);
+        throw e;
     }
-
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(employees));
-    return employees;
 };
 
-export const deleteEmployee = (id: string) => {
-    const employees = getEmployees().filter(e => e.id !== id);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(employees));
-    return employees;
+export const deleteEmployee = async (id: string): Promise<void> => {
+    try {
+        await deleteDoc(doc(db, COLLECTION_NAME, id));
+    } catch (e) {
+        console.error("Error deleting employee: ", e);
+        throw e;
+    }
 };
 
-// Admin auth simulation
+// Admin auth simulation (remains local for simplicity, or could move to Firebase Auth later)
 const ADMIN_KEY = 'team_dashboard_admin_auth';
-export const isAuthenticated = () => {
+
+export const isAuthenticated = (): boolean => {
     return localStorage.getItem(ADMIN_KEY) === 'true';
 };
 
-export const login = (password: string) => {
+export const login = (password: string): boolean => {
+    // Keep the same password or change as needed
     if (password === '2510') {
         localStorage.setItem(ADMIN_KEY, 'true');
         return true;
@@ -80,6 +105,6 @@ export const login = (password: string) => {
     return false;
 };
 
-export const logout = () => {
+export const logout = (): void => {
     localStorage.removeItem(ADMIN_KEY);
 };
