@@ -121,7 +121,7 @@ export const Manage = () => {
                                 // Get weeks info with dates
                                 const weeksList: string[] = [];
                                 if (emp.weeks) {
-                                    Object.entries(emp.weeks).forEach(([month, weeksData]) => {
+                                    Object.values(emp.weeks).forEach((weeksData) => {
                                         Object.keys(weeksData).forEach(startDate => {
                                             const endDate = weeksData[startDate]?.endDate;
                                             const start = new Date(startDate).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
