@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { fetchEmployees, isAuthenticated, login, logout, deleteEmployee } from '../lib/storage';
-import { Employee } from '../types';
+import { isAuthenticated, login, logout, deleteEmployee, toggleEmployeeActive } from '../lib/storage';
+import { useEmployees } from '../hooks/useEmployees';
 import { Button, Input } from '../components/Ui';
-import { Trash2, Edit, LogIn, LogOut, ShieldAlert } from 'lucide-react';
+import { Trash2, Edit, LogIn, LogOut, ShieldAlert, UserX, UserCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { DEFAULT_AVATAR } from '../lib/constants';
@@ -10,21 +10,13 @@ import { DEFAULT_AVATAR } from '../lib/constants';
 export const Manage = () => {
     const [isAdmin, setIsAdmin] = useState(false);
     const [password, setPassword] = useState('');
-    const [employees, setEmployees] = useState<Employee[]>([]);
+    const { employees, refetch: loadEmployees } = useEmployees();
     const [searchTerm, setSearchTerm] = useState('');
     const navigate = useNavigate();
 
     useEffect(() => {
         setIsAdmin(isAuthenticated());
-
-        // Initial fetch
-        loadEmployees();
     }, []);
-
-    const loadEmployees = async () => {
-        const data = await fetchEmployees();
-        setEmployees(data);
-    };
 
     const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
@@ -61,8 +53,7 @@ export const Manage = () => {
     };
 
     const filteredEmployees = employees.filter(e =>
-        e.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        e.team.toLowerCase().includes(searchTerm.toLowerCase())
+        e.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     if (!isAdmin) {
@@ -99,7 +90,7 @@ export const Manage = () => {
 
             <div className="mb-6">
                 <Input
-                    placeholder="Поиск по имени или команде..."
+                    placeholder="Поиск по имени..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -111,7 +102,7 @@ export const Manage = () => {
                         <thead className="bg-surface text-zinc-400 font-medium">
                             <tr>
                                 <th className="p-4">Сотрудник</th>
-                                <th className="p-4">Команда</th>
+                                <th className="p-4">Статус</th>
                                 <th className="p-4">Данные</th>
                                 <th className="p-4">Действия</th>
                             </tr>
@@ -147,7 +138,30 @@ export const Manage = () => {
                                             />
                                             <span className="font-semibold">{emp.name}</span>
                                         </td>
-                                        <td className="p-4 text-zinc-300">{emp.team}</td>
+                                        <td className="p-4">
+                                            <button
+                                                onClick={async () => {
+                                                    try {
+                                                        const newStatus = emp.isActive === false ? true : false;
+                                                        await toggleEmployeeActive(emp.id, newStatus);
+                                                        toast.success(newStatus ? 'Сотрудник активирован' : 'Сотрудник деактивирован');
+                                                        loadEmployees();
+                                                    } catch {
+                                                        toast.error('Ошибка изменения статуса');
+                                                    }
+                                                }}
+                                                className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 transition-all ${emp.isActive !== false
+                                                    ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
+                                                    : 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
+                                                    }`}
+                                            >
+                                                {emp.isActive !== false ? (
+                                                    <><UserCheck className="w-3 h-3" /> Активен</>
+                                                ) : (
+                                                    <><UserX className="w-3 h-3" /> Уволен</>
+                                                )}
+                                            </button>
+                                        </td>
                                         <td className="p-4">
                                             <div className="text-xs space-y-1 max-w-[200px]">
                                                 {weeksList.length > 0 && (
@@ -190,7 +204,7 @@ export const Manage = () => {
                             })}
                             {filteredEmployees.length === 0 && (
                                 <tr>
-                                    <td colSpan={4} className="p-8 text-center text-zinc-500">
+                                    <td colSpan={5} className="p-8 text-center text-zinc-500">
                                         Сотрудники не найдены
                                     </td>
                                 </tr>

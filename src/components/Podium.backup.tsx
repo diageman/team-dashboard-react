@@ -5,7 +5,6 @@ import { Sparkles, Trophy } from 'lucide-react';
 
 import { DEFAULT_AVATAR } from '../lib/constants';
 import { BorderBeam } from './ui/BorderBeam';
-import { MagicCard } from './ui/MagicCard';
 
 interface PodiumItem {
     id: string;
@@ -138,10 +137,13 @@ export const Podium = memo(function Podium({ title, subtitle, items, type = 'def
                                 }
 
                                 return (
-                                    <MagicCard
+                                    <motion.div
                                         key={item.id}
+                                        initial={{ opacity: 0, scale: 0.9 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        whileHover={{ y: -2 }}
                                         className={clsx(
-                                            "relative p-4 rounded-xl border-2 flex flex-col items-center text-center",
+                                            "relative p-4 rounded-xl border-2 flex flex-col items-center text-center transition-all",
                                             borderColor,
                                             bgColor,
                                             glowColor,
@@ -150,9 +152,6 @@ export const Podium = memo(function Podium({ title, subtitle, items, type = 'def
                                             isGold ? 'order-first md:order-2 z-10' :
                                                 isSilver ? 'order-2 md:order-1' : 'order-3 md:order-3'
                                         )}
-                                        gradientColor={isGold ? "#FDB81330" : isSilver ? "#C0C0C030" : "#CD7F3230"}
-                                        gradientSize={180}
-                                        gradientOpacity={0.5}
                                     >
                                         <div className="absolute -top-5 text-3xl filter drop-shadow-lg animate-bounce">
                                             {medal}
@@ -177,7 +176,8 @@ export const Podium = memo(function Podium({ title, subtitle, items, type = 'def
                                             )}
                                         </div>
 
-                                        <h3 className="text-base font-bold text-white leading-tight mb-2 truncate w-full">{item.name}</h3>
+                                        <h3 className="text-base font-bold text-white leading-tight mb-1 truncate w-full">{item.name}</h3>
+                                        <span className="text-[10px] text-zinc-400 mb-2 truncate w-full">{item.team}</span>
 
                                         <div className="text-xl font-black text-white">{item.value}</div>
                                         {item.subValue && <div className="text-[10px] text-zinc-400 mt-1">{item.subValue}</div>}
@@ -186,7 +186,7 @@ export const Podium = memo(function Podium({ title, subtitle, items, type = 'def
                                         {isGold && <BorderBeam size={250} duration={10} colorFrom="#FDB813" colorTo="#FFD700" />}
                                         {isSilver && <BorderBeam size={200} duration={12} colorFrom="#C0C0C0" colorTo="#E8E8E8" />}
                                         {!isGold && !isSilver && <BorderBeam size={180} duration={14} colorFrom="#CD7F32" colorTo="#B87333" />}
-                                    </MagicCard>
+                                    </motion.div>
                                 );
                             })}
                         </div>
@@ -211,6 +211,7 @@ export const Podium = memo(function Podium({ title, subtitle, items, type = 'def
                                 />
                                 <div className="flex-1">
                                     <div className="font-bold text-zinc-200 text-lg">{item.name}</div>
+                                    <div className="text-sm text-zinc-500">{item.team}</div>
                                 </div>
                                 <div className="text-right">
                                     <div className="font-bold text-zinc-200 text-xl">{item.value}</div>

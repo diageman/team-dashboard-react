@@ -7,6 +7,11 @@ export default {
     darkMode: 'class',
     theme: {
         extend: {
+            fontFamily: {
+                sans: ['Inter', 'system-ui', 'sans-serif'],
+                display: ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
+                mono: ['"JetBrains Mono"', 'monospace'],
+            },
             colors: {
                 // Taxi Fleet Theme
                 taxi: {

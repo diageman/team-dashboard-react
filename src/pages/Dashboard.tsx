@@ -1,99 +1,231 @@
-import { useState, useMemo, useEffect } from 'react';
-import { fetchEmployees } from '../lib/storage';
-import { calculateMonthlyStats, getAvailableMonths } from '../lib/calculations';
-import { Employee } from '../types';
+import { useState, useMemo } from 'react';
+import { getISOWeek, getISOWeekYear, startOfISOWeek, endOfISOWeek, parseISO, format } from 'date-fns';
+import { useEmployees } from '../hooks/useEmployees';
+import { getAvailableMonths } from '../lib/calculations';
+import { secondsToTime } from '../lib/utils';
 import { Podium } from '../components/Podium';
+import { MagicSelect } from '../components/ui/MagicSelect';
 import { Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-// Helper: Convert seconds to H:MM:SS
-const secondsToTime = (totalSeconds: number): string => {
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = Math.floor(totalSeconds % 60);
-    return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-};
+
 
 export const Dashboard = () => {
-    const [employees, setEmployees] = useState<Employee[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [selectedMonth, setSelectedMonth] = useState<string>(
-        new Date().toISOString().slice(0, 7)
-    );
-    const [selectedWeek, setSelectedWeek] = useState<string>('all');
-    const [viewMode, setViewMode] = useState<'week' | 'day'>('week');
-    const [selectedDate, setSelectedDate] = useState<string>(
-        new Date().toISOString().slice(0, 10)
-    );
+    const { employees, loading } = useEmployees();
 
-    useEffect(() => {
-        const load = async () => {
-            const data = await fetchEmployees();
-            setEmployees(data);
-            setLoading(false);
-        };
-        load();
-    }, []);
-
+    // Получаем доступные месяцы
     const availableMonths = useMemo(() => getAvailableMonths(employees), [employees]);
 
-    // Get all available weeks for the selected month across all employees
+    // По умолчанию выбираем первый месяц с данными (не текущий!)
+    const [selectedMonth, setSelectedMonth] = useState<string>('');
+
+    // Устанавливаем месяц когда данные загружены
+    useMemo(() => {
+        if (availableMonths.length > 0 && !selectedMonth) {
+            setSelectedMonth(availableMonths[0]);
+        }
+    }, [availableMonths, selectedMonth]);
+
+    const [selectedWeek, setSelectedWeek] = useState<string>('all');
+    // По умолчанию режим day - т.к. импортируются дневные данные
+    const [viewMode, setViewMode] = useState<'week' | 'day'>('day');
+    const [selectedDate, setSelectedDate] = useState<string>('all');
+
+    // Генерируем список недель из days (ISO недели)
     const availableWeeks = useMemo(() => {
-        const weeksSet = new Set<string>();
+        const weeksMap = new Map<string, { start: Date, end: Date, label: string, weekNum: number, year: number }>();
         employees.forEach(emp => {
-            const monthWeeks = emp.weeks?.[selectedMonth] || {};
-            Object.values(monthWeeks).forEach(stats => {
-                if (stats.startDate) {
-                    weeksSet.add(stats.startDate);
+            Object.keys(emp.days || {}).forEach(dateStr => {
+                if (dateStr.startsWith(selectedMonth)) {
+                    const date = parseISO(dateStr);
+                    const weekNum = getISOWeek(date);
+                    const year = getISOWeekYear(date);
+                    const key = `${year}-${weekNum}`;
+
+                    if (!weeksMap.has(key)) {
+                        const start = startOfISOWeek(date);
+                        const end = endOfISOWeek(date);
+                        weeksMap.set(key, {
+                            start,
+                            end,
+                            label: `${format(start, 'dd.MM')} - ${format(end, 'dd.MM')}`,
+                            weekNum,
+                            year
+                        });
+                    }
                 }
             });
         });
-        return Array.from(weeksSet).sort();
+
+        return Array.from(weeksMap.values()).sort((a, b) => a.start.getTime() - b.start.getTime());
     }, [employees, selectedMonth]);
 
-    const formatWeekLabel = (startDateStr: string) => {
-        for (const emp of employees) {
-            const monthWeeks = emp.weeks?.[selectedMonth] || {};
-            const stats = monthWeeks[startDateStr];
-            if (stats && stats.endDate) {
-                const start = new Date(stats.startDate);
-                const end = new Date(stats.endDate);
-                return `${start.getDate()}.${String(start.getMonth() + 1).padStart(2, '0')} - ${end.getDate()}.${String(end.getMonth() + 1).padStart(2, '0')}`;
-            }
-        }
-        return startDateStr;
-    }
-
     // Handle data aggregation based on Week Selection OR Daily Selection
+    // ВАЖНО: Все расчёты теперь базируются на данных из days
     const dashboardData = useMemo(() => {
-        return employees.map(emp => {
+        // Фильтруем только активных сотрудников (isActive !== false)
+        const activeEmployees = employees.filter(emp => emp.isActive !== false);
+
+        return activeEmployees.map(emp => {
             let stats: any = null;
 
+            // Для месячного расчёта берём ВСЕ дни, группируем по неделям
+            // и включаем недели, которые пересекаются с выбранным месяцем
+            const allDays = Object.entries(emp.days || {});
+
+            // Фильтруем дни за выбранный месяц (для режима "конкретный день")
+            const monthDays: Record<string, any> = {};
+            Object.entries(emp.days || {}).forEach(([date, data]) => {
+                if (date.startsWith(selectedMonth)) {
+                    monthDays[date] = data;
+                }
+            });
+
+            const dayEntries = Object.entries(monthDays);
+
+            if (dayEntries.length === 0 && selectedWeek !== 'all') {
+                // Если нет дней в выбранном месяце, но мы хотим общую статистику, продолжаем (логика week 'all' ниже)
+                // Но если выбран конкретный день/неделя и нет даних - null
+                // ВАЖНО: для week 'all' мы смотрим шире чем месяц
+            }
+
             if (viewMode === 'week') {
-                const monthWeeks = emp.weeks?.[selectedMonth] || {};
                 if (selectedWeek === 'all') {
-                    stats = calculateMonthlyStats(monthWeeks);
-                } else {
-                    const wStats = monthWeeks[selectedWeek];
-                    if (wStats) {
+                    // Режим "Весь месяц" - считаем по НЕДЕЛЬНЫМ средним
+                    // Группируем дни по неделям, но для чатов и времени ответа
+                    // считаем ТОЛЬКО дни, которые попадают в выбранный месяц
+                    const weeklyData = new Map<string, {
+                        kpiValues: number[],       // KPI для дней ИЗ ВЫБРАННОГО МЕСЯЦА
+                        chatsInMonth: number,      // Чаты ТОЛЬКО за дни выбранного месяца
+                        responseTimesInMonth: number[], // Время ответа ТОЛЬКО за дни выбранного месяца
+                        datesInMonth: number       // Кол-во дней в выбранном месяце
+                    }>();
+
+                    allDays.forEach(([dateStr, data]) => {
+                        const date = parseISO(dateStr);
+                        const weekNum = getISOWeek(date);
+                        const year = getISOWeekYear(date);
+                        const key = `${year}-${weekNum}`;
+
+                        if (!weeklyData.has(key)) {
+                            weeklyData.set(key, {
+                                kpiValues: [],
+                                chatsInMonth: 0,
+                                responseTimesInMonth: [],
+                                datesInMonth: 0
+                            });
+                        }
+                        const week = weeklyData.get(key)!;
+
+                        // Считаем данные ТОЛЬКО для дней в выбранном месяце
+                        if (dateStr.startsWith(selectedMonth)) {
+                            week.datesInMonth++;
+                            if (data.kpi > 0) {
+                                week.kpiValues.push(data.kpi);
+                            }
+                            week.chatsInMonth += data.chats || 0;
+                            week.responseTimesInMonth.push(data.responseTime || 0);
+                        }
+                    });
+
+                    // Фильтруем только недели, у которых есть хотя бы 1 день в выбранном месяце
+                    const weeklyKpis: number[] = [];
+                    let totalChats = 0;
+                    const weeklyResponseTimes: number[] = [];
+
+                    weeklyData.forEach((week) => {
+                        if (week.datesInMonth > 0 && week.kpiValues.length > 0) {
+                            const weekKpi = week.kpiValues.reduce((a, b) => a + b, 0) / week.kpiValues.length;
+                            weeklyKpis.push(weekKpi);
+                            totalChats += week.chatsInMonth;
+                            if (week.responseTimesInMonth.length > 0) {
+                                weeklyResponseTimes.push(
+                                    week.responseTimesInMonth.reduce((a, b) => a + b, 0) / week.responseTimesInMonth.length
+                                );
+                            }
+                        }
+                    });
+
+                    if (weeklyKpis.length > 0) {
+                        // Месячный KPI = среднее НЕДЕЛЬНЫХ KPI
                         stats = {
-                            kpi: wStats.kpi,
-                            chats: wStats.chats,
-                            responseTime: wStats.responseTime,
-                            activityCount: wStats.activities.length
+                            kpi: parseFloat((weeklyKpis.reduce((a, b) => a + b, 0) / weeklyKpis.length).toFixed(2)),
+                            chats: totalChats,
+                            responseTime: weeklyResponseTimes.length > 0
+                                ? parseFloat((weeklyResponseTimes.reduce((a, b) => a + b, 0) / weeklyResponseTimes.length).toFixed(0))
+                                : 0,
+                            activityCount: 0
                         };
+                    } else {
+                        return { ...emp, stats: null };
+                    }
+                } else {
+                    // Конкретная неделя - парсим ключ "year-week"
+                    const [yearStr, weekStr] = selectedWeek.split('-');
+                    const targetYear = parseInt(yearStr);
+                    const targetWeek = parseInt(weekStr);
+
+                    // Ищем дни этой недели среди ВСЕХ дней (не только месяца)
+                    const weekDays = allDays.filter(([dateStr]) => {
+                        const d = parseISO(dateStr);
+                        return getISOWeek(d) === targetWeek && getISOWeekYear(d) === targetYear;
+                    });
+
+                    if (weekDays.length > 0) {
+                        let totalKpi = 0, totalChats = 0, totalResponseTime = 0;
+                        let kpiCount = 0;
+                        weekDays.forEach(([_, data]) => {
+                            if (data.kpi > 0) {
+                                totalKpi += data.kpi;
+                                kpiCount++;
+                            }
+                            totalChats += data.chats || 0;
+                            totalResponseTime += data.responseTime || 0;
+                        });
+                        stats = {
+                            kpi: kpiCount > 0 ? parseFloat((totalKpi / kpiCount).toFixed(2)) : 0,
+                            chats: totalChats,
+                            responseTime: parseFloat((totalResponseTime / weekDays.length).toFixed(0)),
+                            activityCount: 0
+                        };
+                    } else {
+                        return { ...emp, stats: null };
                     }
                 }
             } else {
                 // DAILY MODE
-                const dayStats = emp.days?.[selectedDate];
-                if (dayStats) {
+                // Если режим Daily, то используем dayEntries (только дни месяца)
+                if (dayEntries.length === 0) return { ...emp, stats: null };
+
+                if (selectedDate === 'all') {
+                    // Агрегация всех дней за месяц - простое среднее
+                    // Пропускаем дни с KPI=0 (незаполненные данные)
+                    let totalKpi = 0, totalChats = 0, totalResponseTime = 0;
+                    let kpiCount = 0;
+                    dayEntries.forEach(([_, data]) => {
+                        if (data.kpi > 0) {
+                            totalKpi += data.kpi;
+                            kpiCount++;
+                        }
+                        totalChats += data.chats || 0;
+                        totalResponseTime += data.responseTime || 0;
+                    });
                     stats = {
-                        kpi: dayStats.kpi,
-                        chats: dayStats.chats,
-                        responseTime: dayStats.responseTime,
-                        activityCount: dayStats.activities.length
+                        kpi: kpiCount > 0 ? parseFloat((totalKpi / kpiCount).toFixed(2)) : 0,
+                        chats: totalChats,
+                        responseTime: parseFloat((totalResponseTime / dayEntries.length).toFixed(0)),
+                        activityCount: 0
                     };
+                } else {
+                    const dayStats = emp.days?.[selectedDate];
+                    if (dayStats) {
+                        stats = {
+                            kpi: dayStats.kpi,
+                            chats: dayStats.chats,
+                            responseTime: dayStats.responseTime || 0,
+                            activityCount: dayStats.activities?.length || 0
+                        };
+                    }
                 }
             }
 
@@ -109,7 +241,14 @@ export const Dashboard = () => {
         metric: 'kpi' | 'chats' | 'responseTime' | 'activityCount',
         sortDir: 'asc' | 'desc'
     ) => {
-        return [...dashboardData]
+        let data = [...dashboardData];
+
+        // Для responseTime: исключаем сотрудников с 0 (не работали)
+        if (metric === 'responseTime') {
+            data = data.filter(e => e.stats![metric] > 0);
+        }
+
+        return data
             .sort((a, b) => {
                 const valA = a.stats![metric];
                 const valB = b.stats![metric];
@@ -193,48 +332,59 @@ export const Dashboard = () => {
                     </div>
                 </div>
 
-                <div className="flex gap-4">
-                    {viewMode === 'week' ? (
-                        <>
-                            <select
-                                value={selectedMonth}
-                                onChange={(e) => {
-                                    setSelectedMonth(e.target.value);
-                                    setSelectedWeek('all'); // Reset week when month changes
-                                }}
-                                className="bg-[#121212]/80 backdrop-blur-sm border border-[#FDB813]/20 text-white rounded-xl px-4 py-2 outline-none focus:border-[#FDB813]/50"
-                            >
-                                {availableMonths.map(m => (
-                                    <option key={m} value={m}>{m}</option>
-                                ))}
-                                {!availableMonths.includes(selectedMonth) && (
-                                    <option value={selectedMonth}>{selectedMonth}</option>
-                                )}
-                            </select>
+                <div className="flex gap-8 flex-wrap items-center">
+                    {/* Общий выбор месяца для всех режимов */}
+                    <MagicSelect
+                        label="Месяц:"
+                        value={selectedMonth}
+                        onChange={(val) => {
+                            setSelectedMonth(val);
+                            setSelectedWeek('all');
+                            setSelectedDate('all');
+                        }}
+                        options={[
+                            ...availableMonths.map(m => ({ value: m, label: m })),
+                            ...(!availableMonths.includes(selectedMonth) && selectedMonth ? [{ value: selectedMonth, label: selectedMonth }] : [])
+                        ]}
+                        className="w-[180px]"
+                    />
 
-                            <select
-                                value={selectedWeek}
-                                onChange={(e) => setSelectedWeek(e.target.value)}
-                                className="bg-[#121212]/80 backdrop-blur-sm border border-[#FDB813]/20 text-white rounded-xl px-4 py-2 outline-none focus:border-[#FDB813]/50"
-                            >
-                                <option value="all">Весь месяц (Итог)</option>
-                                {availableWeeks.map(startDate => (
-                                    <option key={startDate} value={startDate}>
-                                        {formatWeekLabel(startDate)}
-                                    </option>
-                                ))}
-                            </select>
-                        </>
+                    {/* Выбор периода в зависимости от режима */}
+                    {viewMode === 'week' ? (
+                        <MagicSelect
+                            label="Неделя:"
+                            value={selectedWeek}
+                            onChange={(val) => setSelectedWeek(val)}
+                            options={[
+                                { value: 'all', label: 'Весь месяц (Итог)' },
+                                ...availableWeeks.map(week => ({
+                                    value: `${week.year}-${week.weekNum}`,
+                                    label: week.label,
+                                    key: `${week.year}-${week.weekNum}`
+                                }))
+                            ]}
+                            className="w-[220px]"
+                        />
                     ) : (
-                        <div className="flex items-center gap-2">
-                            <span className="text-zinc-400 text-sm">Дата:</span>
-                            <input
-                                type="date"
-                                value={selectedDate}
-                                onChange={(e) => setSelectedDate(e.target.value)}
-                                className="bg-[#121212]/80 backdrop-blur-sm border border-[#FDB813]/20 text-white rounded-xl px-4 py-2 outline-none focus:border-[#FDB813]/50"
-                            />
-                        </div>
+                        <MagicSelect
+                            label="Дата:"
+                            value={selectedDate}
+                            onChange={(val) => setSelectedDate(val)}
+                            options={[
+                                { value: 'all', label: 'Весь месяц (Итог)' },
+                                ...employees.flatMap(emp =>
+                                    Object.keys(emp.days || {})
+                                        .filter(d => d.startsWith(selectedMonth))
+                                ).filter((v, i, a) => a.indexOf(v) === i)
+                                    .sort()
+                                    .map(date => ({
+                                        value: date,
+                                        label: new Date(date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' }),
+                                        key: date
+                                    }))
+                            ]}
+                            className="w-[200px]"
+                        />
                     )}
                 </div>
             </motion.div>

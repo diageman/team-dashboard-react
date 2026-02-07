@@ -14,6 +14,8 @@ export interface Employee {
     name: string;
     team: Team;
     avatar: string;
+    isActive?: boolean; // true = работает, false = уволен (по умолчанию true)
+    terminatedAt?: string; // Дата увольнения (YYYY-MM-DD) для исключения из статистики
     // Format: "YYYY-MM" -> { "YYYY-MM-DD": Stats }
     weeks: Record<string, Record<string, WeeklyStats>>;
     // Format: "YYYY-MM-DD" -> Stats

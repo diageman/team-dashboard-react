@@ -29,11 +29,11 @@ export const saveEmployeeData = async (
         let employee: Employee | null = null;
         let employeeId = id;
 
-        // If no ID provided, try to find existing employee by name + team
+        // If no ID provided, try to find existing employee by name only
         if (!id) {
             const allEmployees = await fetchEmployees();
             const existing = allEmployees.find(
-                e => e.name.toLowerCase() === name.toLowerCase() && e.team === team
+                e => e.name.toLowerCase() === name.toLowerCase()
             );
             if (existing) {
                 employee = existing;
@@ -107,6 +107,29 @@ export const deleteEmployee = async (id: string): Promise<void> => {
         await deleteDoc(doc(db, COLLECTION_NAME, id));
     } catch (e) {
         console.error("Error deleting employee: ", e);
+        throw e;
+    }
+};
+
+// Переключение статуса сотрудника (активен/уволен)
+export const toggleEmployeeActive = async (id: string, isActive: boolean): Promise<void> => {
+    try {
+        const employeeRef = doc(db, COLLECTION_NAME, id);
+        const docSnap = await getDoc(employeeRef);
+        if (docSnap.exists()) {
+            const employee = docSnap.data() as Employee;
+            employee.isActive = isActive;
+            if (!isActive) {
+                // Устанавливаем дату увольнения
+                employee.terminatedAt = new Date().toISOString().split('T')[0];
+            } else {
+                // Очищаем дату увольнения
+                delete employee.terminatedAt;
+            }
+            await setDoc(employeeRef, employee);
+        }
+    } catch (e) {
+        console.error("Error toggling employee status: ", e);
         throw e;
     }
 };

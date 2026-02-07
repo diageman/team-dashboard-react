@@ -17,6 +17,7 @@
     @apply antialiased;
     background: #0A0A0A;
     overflow-x: hidden;
+    font-family: 'Inter', system-ui, sans-serif;
   }
 
   /* Smooth scrolling */
@@ -542,4 +543,36 @@ textarea:focus {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ============================================
+   MAGIC UI ANIMATIONS
+   ============================================ */
+
+@keyframes border-beam {
+  0% {
+    offset-distance: 0%;
+  }
+
+  100% {
+    offset-distance: 100%;
+  }
+}
+
+.animate-border-beam {
+  animation: border-beam calc(var(--duration) * 1s) infinite linear;
+}
+
+@keyframes shimmer-slide {
+  0% {
+    transform: translateX(-100%) rotate(0deg);
+  }
+
+  100% {
+    transform: translateX(100%) rotate(0deg);
+  }
+}
+
+.animate-shimmer-slide {
+  animation: shimmer-slide var(--shimmer-duration, 2.5s) infinite ease-in-out;
 }

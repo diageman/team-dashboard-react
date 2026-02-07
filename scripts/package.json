@@ -1,0 +1,12 @@
+{
+    "name": "sheets-import",
+    "version": "1.0.0",
+    "type": "module",
+    "scripts": {
+        "import": "node import.js"
+    },
+    "dependencies": {
+        "googleapis": "^144.0.0",
+        "firebase-admin": "^13.0.0"
+    }
+}

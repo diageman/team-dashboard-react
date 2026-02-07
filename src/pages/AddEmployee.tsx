@@ -1,31 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { saveEmployeeData, fetchEmployees, isAuthenticated } from '../lib/storage';
-import { Button, Input, Select } from '../components/Ui';
+import { timeToSeconds } from '../lib/utils';
+import { Button, Input } from '../components/Ui';
 import toast from 'react-hot-toast';
 import Cropper from 'react-easy-crop';
 import { getCroppedImg } from '../lib/imageUtils';
 import { Camera, X, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-
-// Helper: Convert HH:MM:SS to total seconds
-const timeToSeconds = (timeStr: string): number => {
-    if (!timeStr || !timeStr.includes(':')) return 0;
-    const parts = timeStr.split(':').map(p => parseInt(p) || 0);
-    if (parts.length === 3) {
-        return parts[0] * 3600 + parts[1] * 60 + parts[2];
-    } else if (parts.length === 2) {
-        return parts[0] * 60 + parts[1];
-    }
-    return 0;
-};
-
 import { DEFAULT_AVATAR } from '../lib/constants';
 
 export const AddEmployee = () => {
     const [formData, setFormData] = useState({
         name: '',
-        team: '',
         avatar: DEFAULT_AVATAR,
         month: new Date().toISOString().slice(0, 7),
         weekStartDate: '',
@@ -114,7 +101,6 @@ export const AddEmployee = () => {
                     setFormData(prev => ({
                         ...prev,
                         name: emp.name,
-                        team: emp.team,
                         avatar: emp.avatar,
                         mode: latestMode,
                         month: latestMonth || prev.month,
@@ -173,8 +159,8 @@ export const AddEmployee = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!formData.name || !formData.team) {
-            toast.error('ФИО и Команда обязательны');
+        if (!formData.name) {
+            toast.error('ФИО обязательно');
             return;
         }
 
@@ -192,7 +178,7 @@ export const AddEmployee = () => {
             await saveEmployeeData(
                 editId || null,
                 formData.name,
-                formData.team as any,
+                'Команда 1',
                 formData.avatar,
                 formData.month,
                 formData.mode === 'day' ? formData.dayDate : formData.weekStartDate,
@@ -241,26 +227,16 @@ export const AddEmployee = () => {
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     {/* Identity Section */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label className="block text-sm font-medium text-zinc-400 mb-2">ФИО Сотрудника</label>
-                            <Input
-                                name="name"
-                                value={formData.name}
-                                onChange={handleInputChange}
-                                placeholder="Иванов Иван"
-                                readOnly={!!editId}
-                                className={editId ? 'opacity-80' : ''}
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-zinc-400 mb-2">Команда</label>
-                            <Select name="team" value={formData.team} onChange={handleInputChange}>
-                                <option value="">Выберите...</option>
-                                <option value="Команда 1">Команда 1</option>
-                                <option value="Команда 2">Команда 2</option>
-                            </Select>
-                        </div>
+                    <div>
+                        <label className="block text-sm font-medium text-zinc-400 mb-2">ФИО Сотрудника</label>
+                        <Input
+                            name="name"
+                            value={formData.name}
+                            onChange={handleInputChange}
+                            placeholder="Иванов Иван"
+                            readOnly={!!editId}
+                            className={editId ? 'opacity-80' : ''}
+                        />
                     </div>
 
                     {/* Time Period Section */}
@@ -438,55 +414,57 @@ export const AddEmployee = () => {
                 </form>
 
                 {/* Crop Modal */}
-                {isCropping && imageSrc && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
-                        <div className="bg-taxi-dark w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl border border-taxi-border">
-                            <div className="p-4 border-b border-taxi-border flex justify-between items-center">
-                                <h3 className="text-white font-bold">Редактирование фото</h3>
-                                <button onClick={() => setIsCropping(false)} className="text-zinc-400 hover:text-white">
-                                    <X className="w-6 h-6" />
-                                </button>
-                            </div>
-                            <div className="relative h-64 w-full bg-black">
-                                <Cropper
-                                    image={imageSrc}
-                                    crop={crop}
-                                    zoom={zoom}
-                                    aspect={1}
-                                    onCropChange={setCrop}
-                                    onCropComplete={handleCropComplete}
-                                    onZoomChange={setZoom}
-                                    cropShape="round"
-                                />
-                            </div>
-                            <div className="p-6 space-y-4">
-                                <div>
-                                    <label className="text-xs text-zinc-400 mb-1 block">Масштаб</label>
-                                    <input
-                                        type="range"
-                                        value={zoom}
-                                        min={1}
-                                        max={3}
-                                        step={0.1}
-                                        aria-labelledby="Zoom"
-                                        onChange={(e) => setZoom(Number(e.target.value))}
-                                        className="w-full h-1 bg-taxi-border rounded-lg appearance-none cursor-pointer"
+                {
+                    isCropping && imageSrc && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+                            <div className="bg-taxi-dark w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl border border-taxi-border">
+                                <div className="p-4 border-b border-taxi-border flex justify-between items-center">
+                                    <h3 className="text-white font-bold">Редактирование фото</h3>
+                                    <button onClick={() => setIsCropping(false)} className="text-zinc-400 hover:text-white">
+                                        <X className="w-6 h-6" />
+                                    </button>
+                                </div>
+                                <div className="relative h-64 w-full bg-black">
+                                    <Cropper
+                                        image={imageSrc}
+                                        crop={crop}
+                                        zoom={zoom}
+                                        aspect={1}
+                                        onCropChange={setCrop}
+                                        onCropComplete={handleCropComplete}
+                                        onZoomChange={setZoom}
+                                        cropShape="round"
                                     />
                                 </div>
-                                <div className="flex gap-4">
-                                    <Button variant="secondary" onClick={() => setIsCropping(false)} className="flex-1">
-                                        Отмена
-                                    </Button>
-                                    <Button onClick={saveCroppedImage} className="flex-1">
-                                        <Check className="w-4 h-4 mr-2" />
-                                        Сохранить
-                                    </Button>
+                                <div className="p-6 space-y-4">
+                                    <div>
+                                        <label className="text-xs text-zinc-400 mb-1 block">Масштаб</label>
+                                        <input
+                                            type="range"
+                                            value={zoom}
+                                            min={1}
+                                            max={3}
+                                            step={0.1}
+                                            aria-labelledby="Zoom"
+                                            onChange={(e) => setZoom(Number(e.target.value))}
+                                            className="w-full h-1 bg-taxi-border rounded-lg appearance-none cursor-pointer"
+                                        />
+                                    </div>
+                                    <div className="flex gap-4">
+                                        <Button variant="secondary" onClick={() => setIsCropping(false)} className="flex-1">
+                                            Отмена
+                                        </Button>
+                                        <Button onClick={saveCroppedImage} className="flex-1">
+                                            <Check className="w-4 h-4 mr-2" />
+                                            Сохранить
+                                        </Button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                )}
-            </div>
-        </div>
+                    )
+                }
+            </div >
+        </div >
     );
 };
