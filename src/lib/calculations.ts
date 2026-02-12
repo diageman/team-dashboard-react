@@ -67,14 +67,12 @@ export const calculateDailyAggregatedStats = (
 
 export const getAvailableMonths = (employees: any[]): string[] => {
     const months = new Set<string>();
-    const today = new Date();
-    const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
-    months.add(currentMonth);
 
     employees.forEach(emp => {
-        // Добавляем месяцы из weeks
-        Object.keys(emp.weeks || {}).forEach(m => months.add(m));
-        // Добавляем месяцы из days (извлекаем YYYY-MM из YYYY-MM-DD)
+        // Только активные сотрудники — чтобы устаревшие месяцы от уволенных не попадали
+        if (emp.isActive === false) return;
+
+        // Месяцы из days (извлекаем YYYY-MM из YYYY-MM-DD)
         Object.keys(emp.days || {}).forEach(d => {
             if (d.length >= 7) months.add(d.slice(0, 7));
         });

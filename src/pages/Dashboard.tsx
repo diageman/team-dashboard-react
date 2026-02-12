@@ -91,69 +91,26 @@ export const Dashboard = () => {
 
             if (viewMode === 'week') {
                 if (selectedWeek === 'all') {
-                    // Режим "Весь месяц" - считаем по НЕДЕЛЬНЫМ средним
-                    // Группируем дни по неделям, но для чатов и времени ответа
-                    // считаем ТОЛЬКО дни, которые попадают в выбранный месяц
-                    const weeklyData = new Map<string, {
-                        kpiValues: number[],       // KPI для дней ИЗ ВЫБРАННОГО МЕСЯЦА
-                        chatsInMonth: number,      // Чаты ТОЛЬКО за дни выбранного месяца
-                        responseTimesInMonth: number[], // Время ответа ТОЛЬКО за дни выбранного месяца
-                        datesInMonth: number       // Кол-во дней в выбранном месяце
-                    }>();
+                    // Режим "Весь месяц" - простое среднее по ВСЕМ дням месяца
+                    // (идентично ежедневному режиму, чтобы данные совпадали)
+                    if (dayEntries.length === 0) return { ...emp, stats: null };
 
-                    allDays.forEach(([dateStr, data]) => {
-                        const date = parseISO(dateStr);
-                        const weekNum = getISOWeek(date);
-                        const year = getISOWeekYear(date);
-                        const key = `${year}-${weekNum}`;
-
-                        if (!weeklyData.has(key)) {
-                            weeklyData.set(key, {
-                                kpiValues: [],
-                                chatsInMonth: 0,
-                                responseTimesInMonth: [],
-                                datesInMonth: 0
-                            });
+                    let totalKpi = 0, totalChats = 0, totalResponseTime = 0;
+                    let kpiCount = 0;
+                    dayEntries.forEach(([_, data]) => {
+                        if (data.kpi > 0) {
+                            totalKpi += data.kpi;
+                            kpiCount++;
                         }
-                        const week = weeklyData.get(key)!;
-
-                        // Считаем данные ТОЛЬКО для дней в выбранном месяце
-                        if (dateStr.startsWith(selectedMonth)) {
-                            week.datesInMonth++;
-                            if (data.kpi > 0) {
-                                week.kpiValues.push(data.kpi);
-                            }
-                            week.chatsInMonth += data.chats || 0;
-                            week.responseTimesInMonth.push(data.responseTime || 0);
-                        }
+                        totalChats += data.chats || 0;
+                        totalResponseTime += data.responseTime || 0;
                     });
 
-                    // Фильтруем только недели, у которых есть хотя бы 1 день в выбранном месяце
-                    const weeklyKpis: number[] = [];
-                    let totalChats = 0;
-                    const weeklyResponseTimes: number[] = [];
-
-                    weeklyData.forEach((week) => {
-                        if (week.datesInMonth > 0 && week.kpiValues.length > 0) {
-                            const weekKpi = week.kpiValues.reduce((a, b) => a + b, 0) / week.kpiValues.length;
-                            weeklyKpis.push(weekKpi);
-                            totalChats += week.chatsInMonth;
-                            if (week.responseTimesInMonth.length > 0) {
-                                weeklyResponseTimes.push(
-                                    week.responseTimesInMonth.reduce((a, b) => a + b, 0) / week.responseTimesInMonth.length
-                                );
-                            }
-                        }
-                    });
-
-                    if (weeklyKpis.length > 0) {
-                        // Месячный KPI = среднее НЕДЕЛЬНЫХ KPI
+                    if (kpiCount > 0) {
                         stats = {
-                            kpi: parseFloat((weeklyKpis.reduce((a, b) => a + b, 0) / weeklyKpis.length).toFixed(2)),
+                            kpi: parseFloat((totalKpi / kpiCount).toFixed(2)),
                             chats: totalChats,
-                            responseTime: weeklyResponseTimes.length > 0
-                                ? parseFloat((weeklyResponseTimes.reduce((a, b) => a + b, 0) / weeklyResponseTimes.length).toFixed(0))
-                                : 0,
+                            responseTime: parseFloat((totalResponseTime / dayEntries.length).toFixed(0)),
                             activityCount: 0
                         };
                     } else {

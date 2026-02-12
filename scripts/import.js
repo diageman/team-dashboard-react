@@ -22,7 +22,26 @@ const SPREADSHEET_ID = '15HWSNolbbdvi9GJwIb2aXuH5v3uYRqdNamYq-TWCLd4';
 // Ключевые слова для поиска актуального листа
 // Скрипт найдёт ВСЕ листы, содержащие ОБА этих слова
 const SHEET_KEYWORDS = ['Чаты поддержки', 'акт'];
-// ===================================
+
+// Названия месяцев на русском для парсинга из имени листа
+// Используем достаточно длинные префиксы для надёжного распознавания
+const MONTH_NAMES = {
+    'январ': 1, 'феврал': 2, 'март': 3, 'апрел': 4,
+    'май': 5, 'мая': 5, 'июн': 6, 'июл': 7, 'август': 8,
+    'сентябр': 9, 'октябр': 10, 'ноябр': 11, 'декабр': 12
+};
+
+// Извлечение номера месяца из названия листа
+// "Чаты поддержки (февраль) акт" → 2
+function extractMonthFromSheetName(sheetName) {
+    const lower = sheetName.toLowerCase();
+    for (const [prefix, monthNum] of Object.entries(MONTH_NAMES)) {
+        if (lower.includes(prefix)) {
+            return monthNum;
+        }
+    }
+    return null;
+}
 
 // Инициализация Firebase Admin
 const serviceAccount = JSON.parse(
@@ -292,9 +311,61 @@ async function importData() {
             return;
         }
 
-        console.log(`📚 Найдено ${matchingSheets.length} подходящих листов:`);
+        console.log(`📚 Найдено ${matchingSheets.length} подходящих листов по ключевым словам:`);
         matchingSheets.forEach((name, i) => console.log(`   ${i + 1}. "${name}"`));
-        console.log('');
+
+        // Всегда импортируем текущий + предыдущий месяц
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth() + 1; // 1-12
+
+        // Вычисляем предыдущий месяц и его год
+        let prevMonth, prevYear;
+        if (currentMonth === 1) {
+            prevMonth = 12;
+            prevYear = currentYear - 1;
+        } else {
+            prevMonth = currentMonth - 1;
+            prevYear = currentYear;
+        }
+
+        console.log(`\n📅 Импорт за 2 месяца: ${currentMonth}/${currentYear} и ${prevMonth}/${prevYear}`);
+        console.log(`🔍 Фильтруем листы...\n`);
+
+        matchingSheets = matchingSheets.filter(name => {
+            const sheetMonth = extractMonthFromSheetName(name);
+            if (sheetMonth === null) {
+                console.log(`   ⚠️  "${name}" — месяц не определён, пропускаем`);
+                return false;
+            }
+
+            // Определяем год листа: если месяц > текущего, значит это прошлый год
+            const sheetYear = sheetMonth > currentMonth ? currentYear - 1 : currentYear;
+
+            // Проверяем: лист за текущий месяц?
+            const isCurrentMonth = (sheetMonth === currentMonth && sheetYear === currentYear);
+
+            // Проверяем: лист за предыдущий месяц?
+            const isPrevMonth = (sheetMonth === prevMonth && sheetYear === prevYear);
+
+            if (isCurrentMonth) {
+                console.log(`   ✅ "${name}" — ${sheetMonth}/${sheetYear} (текущий месяц)`);
+                return true;
+            }
+            if (isPrevMonth) {
+                console.log(`   ✅ "${name}" — ${sheetMonth}/${sheetYear} (предыдущий месяц)`);
+                return true;
+            }
+            console.log(`   ⏭️  "${name}" — ${sheetMonth}/${sheetYear} (пропускаем)`);
+            return false;
+        });
+
+        if (matchingSheets.length === 0) {
+            console.error('\n❌ Нет актуальных листов для импорта!');
+            return;
+        }
+
+        console.log(`\n📋 К импорту: ${matchingSheets.length} листов`);
 
     } catch (err) {
         console.error('❌ Не удалось получить список листов:', err.message);
