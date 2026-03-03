@@ -152,7 +152,7 @@ async function processSheet(sheets, sheetName) {
         const nameCell = row[2];
         const kpiCell = row[3];
         const chatsCell = row[4];
-        const responseTimeCell = row[13];
+        const responseTimeCell = row[10]; // Столбец K (раньше N)
 
         // Пропускаем если нет имени или даты
         if (!nameCell || !dateCell || nameCell === 'Менеджер') {

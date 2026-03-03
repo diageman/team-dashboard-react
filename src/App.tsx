@@ -4,6 +4,7 @@ import { Layout } from './components/Layout';
 import { Dashboard } from './pages/Dashboard';
 import { AddEmployee } from './pages/AddEmployee';
 import { Manage } from './pages/Manage';
+import { Ideas } from './pages/Ideas';
 
 function App() {
     return (
@@ -13,6 +14,7 @@ function App() {
                     <Route path="/" element={<Dashboard />} />
                     <Route path="/add" element={<AddEmployee />} />
                     <Route path="/manage" element={<Manage />} />
+                    <Route path="/ideas" element={<Ideas />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
             </Layout>

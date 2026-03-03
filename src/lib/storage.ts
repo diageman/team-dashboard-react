@@ -134,6 +134,45 @@ export const toggleEmployeeActive = async (id: string, isActive: boolean): Promi
     }
 };
 
+// Управление идеями
+export const saveEmployeeIdea = async (id: string, month: string, idea: string): Promise<void> => {
+    try {
+        const employeeRef = doc(db, COLLECTION_NAME, id);
+        const docSnap = await getDoc(employeeRef);
+        if (docSnap.exists()) {
+            const employee = docSnap.data() as Employee;
+            if (!employee.ideas) employee.ideas = {};
+            if (!employee.ideas[month]) employee.ideas[month] = [];
+
+            // Проверка на дубликаты
+            if (!employee.ideas[month].includes(idea)) {
+                employee.ideas[month].push(idea);
+                await setDoc(employeeRef, employee);
+            }
+        }
+    } catch (e) {
+        console.error("Error saving employee idea: ", e);
+        throw e;
+    }
+};
+
+export const removeEmployeeIdea = async (id: string, month: string, index: number): Promise<void> => {
+    try {
+        const employeeRef = doc(db, COLLECTION_NAME, id);
+        const docSnap = await getDoc(employeeRef);
+        if (docSnap.exists()) {
+            const employee = docSnap.data() as Employee;
+            if (employee.ideas && employee.ideas[month]) {
+                employee.ideas[month].splice(index, 1);
+                await setDoc(employeeRef, employee);
+            }
+        }
+    } catch (e) {
+        console.error("Error removing employee idea: ", e);
+        throw e;
+    }
+};
+
 // Admin auth simulation (remains local for simplicity, or could move to Firebase Auth later)
 const ADMIN_KEY = 'team_dashboard_admin_auth';
 

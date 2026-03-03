@@ -10,6 +10,7 @@ interface LayoutProps {
 
 const navItems = [
     { path: '/', icon: LayoutDashboard, label: 'Дашборд' },
+    { path: '/ideas', icon: Sparkles, label: 'Идеи' },
     { path: '/add', icon: UserPlus, label: 'Добавить' },
     { path: '/manage', icon: Settings, label: 'Управление' },
 ];

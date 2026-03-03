@@ -10,6 +10,7 @@ interface MagicCardProps {
     gradientSize?: number;
     gradientColor?: string;
     gradientOpacity?: number;
+    onClick?: () => void;
 }
 
 export function MagicCard({
@@ -18,6 +19,7 @@ export function MagicCard({
     gradientSize = 200,
     gradientColor = "#FDB81320",
     gradientOpacity = 0.3,
+    onClick
 }: MagicCardProps) {
     const cardRef = useRef<HTMLDivElement>(null);
     const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -68,6 +70,7 @@ export function MagicCard({
             <motion.div
                 ref={cardRef}
                 className={cn("relative", className)}
+                onClick={onClick}
                 onMouseMove={handleMouseMove}
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}

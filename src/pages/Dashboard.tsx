@@ -4,6 +4,7 @@ import { useEmployees } from '../hooks/useEmployees';
 import { getAvailableMonths } from '../lib/calculations';
 import { secondsToTime } from '../lib/utils';
 import { Podium } from '../components/Podium';
+import { IdeasModal } from '../components/IdeasModal';
 import { MagicSelect } from '../components/ui/MagicSelect';
 import { Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -30,6 +31,7 @@ export const Dashboard = () => {
     // По умолчанию режим day - т.к. импортируются дневные данные
     const [viewMode, setViewMode] = useState<'week' | 'day'>('day');
     const [selectedDate, setSelectedDate] = useState<string>('all');
+    const [selectedEmployeeForIdeas, setSelectedEmployeeForIdeas] = useState<string | null>(null);
 
     // Генерируем список недель из days (ISO недели)
     const availableWeeks = useMemo(() => {
@@ -66,6 +68,40 @@ export const Dashboard = () => {
         // Фильтруем только активных сотрудников (isActive !== false)
         const activeEmployees = employees.filter(emp => emp.isActive !== false);
 
+        const aggregateDays = (entries: [string, any][]) => {
+            let totalKpi = 0, totalChats = 0, weightedResponseTime = 0, rtSimpleSum = 0, rtDays = 0;
+            let kpiCount = 0;
+            entries.forEach(([_, data]) => {
+                if (data.kpi > 0) {
+                    totalKpi += data.kpi;
+                    kpiCount++;
+                }
+                const chats = data.chats || 0;
+                const rt = data.responseTime || 0;
+                totalChats += chats;
+                if (rt > 0 && chats > 0) {
+                    weightedResponseTime += rt * chats;
+                    rtSimpleSum += rt;
+                    rtDays++;
+                } else if (rt > 0) {
+                    weightedResponseTime += rt;
+                    rtSimpleSum += rt;
+                    rtDays++;
+                }
+            });
+
+            const avgResponseTime = totalChats > 0
+                ? (weightedResponseTime / totalChats)
+                : (rtDays > 0 ? (rtSimpleSum / rtDays) : 0);
+
+            return {
+                kpi: kpiCount > 0 ? parseFloat((totalKpi / kpiCount).toFixed(2)) : 0,
+                chats: totalChats,
+                responseTime: Math.round(avgResponseTime),
+                activityCount: 0
+            };
+        };
+
         return activeEmployees.map(emp => {
             let stats: any = null;
 
@@ -83,112 +119,59 @@ export const Dashboard = () => {
 
             const dayEntries = Object.entries(monthDays);
 
-            if (dayEntries.length === 0 && selectedWeek !== 'all') {
-                // Если нет дней в выбранном месяце, но мы хотим общую статистику, продолжаем (логика week 'all' ниже)
-                // Но если выбран конкретный день/неделя и нет даних - null
-                // ВАЖНО: для week 'all' мы смотрим шире чем месяц
-            }
+            const ideasCount = emp.ideas?.[selectedMonth]?.length || 0;
 
             if (viewMode === 'week') {
                 if (selectedWeek === 'all') {
-                    // Режим "Весь месяц" - простое среднее по ВСЕМ дням месяца
-                    // (идентично ежедневному режиму, чтобы данные совпадали)
-                    if (dayEntries.length === 0) return { ...emp, stats: null };
-
-                    let totalKpi = 0, totalChats = 0, totalResponseTime = 0;
-                    let kpiCount = 0;
-                    dayEntries.forEach(([_, data]) => {
-                        if (data.kpi > 0) {
-                            totalKpi += data.kpi;
-                            kpiCount++;
-                        }
-                        totalChats += data.chats || 0;
-                        totalResponseTime += data.responseTime || 0;
-                    });
-
-                    if (kpiCount > 0) {
-                        stats = {
-                            kpi: parseFloat((totalKpi / kpiCount).toFixed(2)),
-                            chats: totalChats,
-                            responseTime: parseFloat((totalResponseTime / dayEntries.length).toFixed(0)),
-                            activityCount: 0
-                        };
-                    } else {
-                        return { ...emp, stats: null };
+                    if (dayEntries.length > 0) {
+                        stats = aggregateDays(dayEntries);
+                        if (stats.kpi === 0 && stats.chats === 0) stats = null;
                     }
                 } else {
-                    // Конкретная неделя - парсим ключ "year-week"
                     const [yearStr, weekStr] = selectedWeek.split('-');
                     const targetYear = parseInt(yearStr);
                     const targetWeek = parseInt(weekStr);
 
-                    // Ищем дни этой недели среди ВСЕХ дней (не только месяца)
                     const weekDays = allDays.filter(([dateStr]) => {
                         const d = parseISO(dateStr);
                         return getISOWeek(d) === targetWeek && getISOWeekYear(d) === targetYear;
                     });
 
                     if (weekDays.length > 0) {
-                        let totalKpi = 0, totalChats = 0, totalResponseTime = 0;
-                        let kpiCount = 0;
-                        weekDays.forEach(([_, data]) => {
-                            if (data.kpi > 0) {
-                                totalKpi += data.kpi;
-                                kpiCount++;
-                            }
-                            totalChats += data.chats || 0;
-                            totalResponseTime += data.responseTime || 0;
-                        });
-                        stats = {
-                            kpi: kpiCount > 0 ? parseFloat((totalKpi / kpiCount).toFixed(2)) : 0,
-                            chats: totalChats,
-                            responseTime: parseFloat((totalResponseTime / weekDays.length).toFixed(0)),
-                            activityCount: 0
-                        };
-                    } else {
-                        return { ...emp, stats: null };
+                        stats = aggregateDays(weekDays);
+                        if (stats.kpi === 0 && stats.chats === 0) stats = null;
                     }
                 }
             } else {
                 // DAILY MODE
-                // Если режим Daily, то используем dayEntries (только дни месяца)
-                if (dayEntries.length === 0) return { ...emp, stats: null };
-
-                if (selectedDate === 'all') {
-                    // Агрегация всех дней за месяц - простое среднее
-                    // Пропускаем дни с KPI=0 (незаполненные данные)
-                    let totalKpi = 0, totalChats = 0, totalResponseTime = 0;
-                    let kpiCount = 0;
-                    dayEntries.forEach(([_, data]) => {
-                        if (data.kpi > 0) {
-                            totalKpi += data.kpi;
-                            kpiCount++;
+                if (dayEntries.length > 0) {
+                    if (selectedDate === 'all') {
+                        stats = aggregateDays(dayEntries);
+                        if (stats.kpi === 0 && stats.chats === 0) stats = null;
+                    } else {
+                        const dayStats = emp.days?.[selectedDate];
+                        if (dayStats) {
+                            stats = {
+                                kpi: dayStats.kpi,
+                                chats: dayStats.chats,
+                                responseTime: dayStats.responseTime || 0,
+                                activityCount: 0
+                            };
                         }
-                        totalChats += data.chats || 0;
-                        totalResponseTime += data.responseTime || 0;
-                    });
-                    stats = {
-                        kpi: kpiCount > 0 ? parseFloat((totalKpi / kpiCount).toFixed(2)) : 0,
-                        chats: totalChats,
-                        responseTime: parseFloat((totalResponseTime / dayEntries.length).toFixed(0)),
-                        activityCount: 0
-                    };
-                } else {
-                    const dayStats = emp.days?.[selectedDate];
-                    if (dayStats) {
-                        stats = {
-                            kpi: dayStats.kpi,
-                            chats: dayStats.chats,
-                            responseTime: dayStats.responseTime || 0,
-                            activityCount: dayStats.activities?.length || 0
-                        };
                     }
                 }
             }
 
+            if (stats) {
+                stats.activityCount = ideasCount;
+            } else if (ideasCount > 0) {
+                stats = { kpi: 0, chats: 0, responseTime: 0, activityCount: ideasCount };
+            }
+
             return {
                 ...emp,
-                stats
+                stats,
+                daysWorked: dayEntries.length
             };
         }).filter(e => e.stats !== null);
     }, [employees, selectedMonth, selectedWeek, viewMode, selectedDate]);
@@ -199,6 +182,15 @@ export const Dashboard = () => {
         sortDir: 'asc' | 'desc'
     ) => {
         let data = [...dashboardData];
+
+        // Отсеиваем сотрудников, которые отработали мало дней, если смотрим "За месяц"
+        // Высчитываем порог динамически на случай если мы смотрим в начале месяца (не успел отработать 10 дней)
+        const isMonthlyView = (viewMode === 'week' && selectedWeek === 'all') || (viewMode === 'day' && selectedDate === 'all');
+        if (isMonthlyView) {
+            const maxDays = Math.max(...data.map(e => e.daysWorked || 0), 0);
+            const threshold = Math.min(10, Math.ceil(maxDays * 0.5)); // Порог = 50% от лидера месяца, но не больше 10
+            data = data.filter(e => (e.daysWorked || 0) >= threshold);
+        }
 
         // Для responseTime: исключаем сотрудников с 0 (не работали)
         if (metric === 'responseTime') {
@@ -255,7 +247,8 @@ export const Dashboard = () => {
             title: 'Активность и идеи',
             subtitle: 'Вклад в развитие',
             type: 'default',
-            data: getLeaderboard('activityCount', 'desc')
+            data: getLeaderboard('activityCount', 'desc'),
+            onItemClick: (id: string) => setSelectedEmployeeForIdeas(id)
         },
     ];
 
@@ -366,10 +359,18 @@ export const Dashboard = () => {
                             subtitle={section.subtitle}
                             items={section.data}
                             type={section.type as any}
+                            onItemClick={section.title === 'Активность и идеи' ? (id) => setSelectedEmployeeForIdeas(id) : undefined}
                         />
                     </motion.section>
                 ))}
             </motion.div>
+
+            <IdeasModal
+                isOpen={!!selectedEmployeeForIdeas}
+                onClose={() => setSelectedEmployeeForIdeas(null)}
+                employee={employees.find(e => e.id === selectedEmployeeForIdeas) || null}
+                month={selectedMonth}
+            />
         </div >
     );
 };

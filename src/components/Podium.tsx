@@ -23,9 +23,10 @@ interface PodiumProps {
     subtitle: string;
     items: PodiumItem[];
     type?: 'default' | 'premium';
+    onItemClick?: (id: string) => void;
 }
 
-export const Podium = memo(function Podium({ title, subtitle, items, type = 'default' }: PodiumProps) {
+export const Podium = memo(function Podium({ title, subtitle, items, type = 'default', onItemClick }: PodiumProps) {
     const isPremium = type === 'premium';
 
     // Top 3 for Podium
@@ -140,8 +141,10 @@ export const Podium = memo(function Podium({ title, subtitle, items, type = 'def
                                 return (
                                     <MagicCard
                                         key={item.id}
+                                        onClick={() => onItemClick && onItemClick(item.id)}
                                         className={clsx(
                                             "relative p-4 rounded-xl border-2 flex flex-col items-center text-center",
+                                            onItemClick ? "cursor-pointer hover:scale-105 transition-transform" : "",
                                             borderColor,
                                             bgColor,
                                             glowColor,
@@ -199,7 +202,11 @@ export const Podium = memo(function Podium({ title, subtitle, items, type = 'def
                         {others.map((item) => (
                             <div
                                 key={item.id}
-                                className="flex items-center gap-4 p-4 rounded-xl border border-secondary/50 bg-background/40 cursor-default hover:bg-[#FDB813]/10 hover:border-[#FDB813]/30 transition-colors duration-200"
+                                onClick={() => onItemClick && onItemClick(item.id)}
+                                className={clsx(
+                                    "flex items-center gap-4 p-4 rounded-xl border border-secondary/50 bg-background/40 transition-colors duration-200",
+                                    onItemClick ? "cursor-pointer hover:bg-[#FDB813]/20 hover:border-[#FDB813]/50" : "cursor-default hover:bg-[#FDB813]/10 hover:border-[#FDB813]/30"
+                                )}
                             >
                                 <div className="font-mono text-zinc-500 font-bold w-8 text-center text-lg">#{item.rank}</div>
                                 <img

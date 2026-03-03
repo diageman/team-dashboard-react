@@ -20,6 +20,8 @@ export interface Employee {
     weeks: Record<string, Record<string, WeeklyStats>>;
     // Format: "YYYY-MM-DD" -> Stats
     days?: Record<string, WeeklyStats>;
+    // Format: "YYYY-MM" -> ["Идея 1", "Идея 2"]
+    ideas?: Record<string, string[]>;
 }
 
 export interface MonthlyAggregatedStats {
