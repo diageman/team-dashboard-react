@@ -51,6 +51,7 @@ export const MagicSelect = ({
             <div className="relative inline-block min-w-[200px]">
                 {/* Trigger Button */}
                 <motion.button
+                    type="button"
                     whileHover={{ scale: 1.02, borderColor: 'rgba(253, 184, 19, 0.5)' }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => setIsOpen(!isOpen)}
@@ -101,6 +102,7 @@ export const MagicSelect = ({
                             <div className="p-1">
                                 {options.map((option) => (
                                     <motion.button
+                                        type="button"
                                         key={option.key || option.value}
                                         onClick={() => {
                                             onChange(option.value);

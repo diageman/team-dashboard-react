@@ -48,7 +48,7 @@ export const Ideas = () => {
 
     // Format list of ideas for the selected month
     const monthIdeas = useMemo(() => {
-        const list: { id: string, name: string, team: string, avatar: string, idea: string, ideaIndex: number }[] = [];
+        const list: { id: string, name: string, avatar: string, idea: string, ideaIndex: number }[] = [];
 
         employees.forEach(emp => {
             if (emp.ideas && emp.ideas[selectedMonth]) {
@@ -56,7 +56,6 @@ export const Ideas = () => {
                     list.push({
                         id: emp.id,
                         name: emp.name,
-                        team: emp.team,
                         avatar: emp.avatar,
                         idea: idea,
                         ideaIndex: index
@@ -65,11 +64,8 @@ export const Ideas = () => {
             }
         });
 
-        // Sort by team and then by name
-        return list.sort((a, b) => {
-            if (a.team !== b.team) return a.team.localeCompare(b.team);
-            return a.name.localeCompare(b.name);
-        });
+        // Sort by name
+        return list.sort((a, b) => a.name.localeCompare(b.name));
     }, [employees, selectedMonth]);
 
     const handleSaveIdea = async (e: React.FormEvent) => {
@@ -275,7 +271,6 @@ export const Ideas = () => {
                                     <div className="flex-1 min-w-0 z-10">
                                         <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-3 mb-1">
                                             <h4 className="font-bold text-zinc-100 text-lg truncate">{item.name}</h4>
-                                            <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider">{item.team}</span>
                                         </div>
                                         <p className="text-zinc-300 whitespace-pre-wrap text-sm leading-relaxed">{item.idea}</p>
                                     </div>
